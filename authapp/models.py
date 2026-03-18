@@ -70,6 +70,7 @@ class FarmerProfile(models.Model):
 	)
 	farmer_name = models.CharField(max_length=255)
 	contact_number = models.CharField(max_length=20)
+	email = models.EmailField(null=True, blank=True)
 	registered_with_fpo = models.ForeignKey(
 		FpoProfile,
 		on_delete=models.SET_NULL,
