@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import FarmerProfileViewSet, FPOProfileViewSet, UserRegistrationView
+from .api.views import FarmerProfileViewSet, FPOProfileViewSet, UserRegistrationView
 
 router = DefaultRouter()
 router.register("fpo-profiles", FPOProfileViewSet, basename="fpo-profile")
