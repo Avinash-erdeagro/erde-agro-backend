@@ -1,10 +1,4 @@
-"""
-Django settings for erde-agro-farmapp-backend project.
-"""
-
-import os
 from pathlib import Path
-
 from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -14,16 +8,11 @@ SECRET_KEY = config(
     default="django-insecure-lsif3i%f_y9b7sm^((35!u4v1tld6nq$b^ohd$ua-xjd0ka&3b",
 )
 
-DEBUG = config("DEBUG", default=True, cast=bool)
-
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
-    default="*",
-    cast=lambda v: [s.strip() for s in v.split(",")],
+    default="127.0.0.1,localhost",
+    cast=lambda value: [item.strip() for item in value.split(",") if item.strip()],
 )
-
-
-# Application definition
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -36,13 +25,14 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "corsheaders",
+    "storages",
     # Local
     "authapp",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware", 
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -70,9 +60,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
 
-
-# Database
 DATABASES = {
     "default": {
         "ENGINE": config("DB_ENGINE", default="django.db.backends.sqlite3"),
@@ -84,7 +73,6 @@ DATABASES = {
     }
 }
 
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -93,17 +81,14 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-
-# REST Framework
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework.authentication.TokenAuthentication",
     ),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.AllowAny",
+    ),
 }
-
-# CORS
-CORS_ORIGIN_ALLOW_ALL = True
-
 
 # Internationalization
 LANGUAGE_CODE = "en-us"
@@ -111,31 +96,28 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "static"
 
-# Static files
-STATIC_URL = "static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "static")
-
-# Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Storage settings for AWS S3
 STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-        "LOCATION": os.path.join(BASE_DIR, "static"),
     },
 }
+
+
 AWS_LOCATION = "media"
-AWS_QUERYSTRING_EXPIRE = str(60 * 60 * 24 * 7)
+AWS_QUERYSTRING_EXPIRE = 60 * 60 * 24 * 7
 AWS_S3_SIGNATURE_VERSION = "s3v4"
 AWS_S3_REGION_NAME = config("AWS_REGION_NAME", default="ap-south-1")
 AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None
 
-# These should be set via environment variables 
 AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID", default="")
 AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY", default="")
 AWS_STORAGE_BUCKET_NAME = config("AWS_STORAGE_BUCKET_NAME", default="")
