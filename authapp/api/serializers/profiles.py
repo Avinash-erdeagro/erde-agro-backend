@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .locality import LocalitySerializer, normalize_locality_data
-from authapp.models import FarmerProfile, FpoProfile, Locality
+from .locality import LocalitySerializer
+from authapp.models import FarmerProfile, FpoProfile
+from authapp.services import get_or_create_locality
 
 class FpoProfileSerializer(serializers.ModelSerializer):
     locality = LocalitySerializer(required=False, allow_null=True)
@@ -13,9 +14,7 @@ class FpoProfileSerializer(serializers.ModelSerializer):
 
         locality = None
         if locality_data:
-            locality, _ = Locality.objects.get_or_create(
-                **normalize_locality_data(locality_data)
-            )
+            locality = get_or_create_locality(locality_data)
 
         return self.Meta.model.objects.create(
             app_user=app_user,
@@ -57,9 +56,7 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
 
         locality = None
         if locality_data:
-            locality, _ = Locality.objects.get_or_create(
-                **normalize_locality_data(locality_data)
-            )
+            locality = get_or_create_locality(locality_data)
 
         return self.Meta.model.objects.create(
             app_user=app_user,
