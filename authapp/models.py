@@ -11,6 +11,14 @@ class Locality(models.Model):
 	district = models.CharField(max_length=150)
 	state = models.CharField(max_length=150)
 
+	class Meta:
+		constraints = [
+			models.UniqueConstraint(
+				fields=["pin_code", "village", "taluka", "district", "state"],
+				name="unique_locality_combination",
+			)
+		]
+
 	def __str__(self) -> str:
 		return f"{self.village}, {self.district}, {self.state}"
 

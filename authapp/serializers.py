@@ -7,7 +7,24 @@ from .models import AppUser, FarmerProfile, FpoProfile, Locality
 User = get_user_model()
 
 
+def _normalize_whitespace(value):
+    return " ".join(value.strip().split())
+
+
+def normalize_locality_data(locality_data):
+    return {
+        "pin_code": _normalize_whitespace(locality_data["pin_code"]).upper(),
+        "village": _normalize_whitespace(locality_data["village"]).title(),
+        "taluka": _normalize_whitespace(locality_data["taluka"]).title(),
+        "district": _normalize_whitespace(locality_data["district"]).title(),
+        "state": _normalize_whitespace(locality_data["state"]).title(),
+    }
+
+
 class LocalitySerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        return normalize_locality_data(attrs)
+
     class Meta:
         model = Locality
         fields = ["id", "pin_code", "village", "taluka", "district", "state"]
@@ -24,7 +41,9 @@ class FpoProfileSerializer(serializers.ModelSerializer):
 
         locality = None
         if locality_data:
-            locality, _ = Locality.objects.get_or_create(**locality_data)
+            locality, _ = Locality.objects.get_or_create(
+                **normalize_locality_data(locality_data)
+            )
 
         return self.Meta.model.objects.create(
             app_user=app_user,
@@ -66,7 +85,9 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
 
         locality = None
         if locality_data:
-            locality, _ = Locality.objects.get_or_create(**locality_data)
+            locality, _ = Locality.objects.get_or_create(
+                **normalize_locality_data(locality_data)
+            )
 
         return self.Meta.model.objects.create(
             app_user=app_user,
@@ -216,7 +237,9 @@ class UserRegistrationSerializer(serializers.Serializer):
         user = User.objects.create_user(username=username, password=password)
         app_user = AppUser.objects.create(user=user, role=role)
 
-        locality, _ = Locality.objects.get_or_create(**locality_data)
+        locality, _ = Locality.objects.get_or_create(
+            **normalize_locality_data(locality_data)
+        )
 
         if role == AppUser.Role.FARMER:
             FarmerProfile.objects.create(
