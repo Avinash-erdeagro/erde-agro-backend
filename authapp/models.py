@@ -4,7 +4,7 @@ from django.db import models
 User = get_user_model()
 
 
-class Address(models.Model):
+class Locality(models.Model):
 	pin_code = models.CharField(max_length=10)
 	village = models.CharField(max_length=150)
 	taluka = models.CharField(max_length=150)
@@ -33,8 +33,8 @@ class FpoProfile(models.Model):
 		on_delete=models.CASCADE,
 		related_name="fpo_profile",
 	)
-	address = models.ForeignKey(
-		Address,
+	locality = models.ForeignKey(
+		Locality,
 		on_delete=models.SET_NULL,
 		null=True,
 		blank=True,
@@ -61,8 +61,8 @@ class FarmerProfile(models.Model):
 		on_delete=models.CASCADE,
 		related_name="farmer_profile",
 	)
-	address = models.ForeignKey(
-		Address,
+	locality = models.ForeignKey(
+		Locality,
 		on_delete=models.SET_NULL,
 		null=True,
 		blank=True,

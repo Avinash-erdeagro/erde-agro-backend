@@ -2,29 +2,33 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
 
-from .models import Address, AppUser, FarmerProfile, FpoProfile
+from .models import AppUser, FarmerProfile, FpoProfile, Locality
 
 User = get_user_model()
 
 
-class AddressSerializer(serializers.ModelSerializer):
+class LocalitySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Address
+        model = Locality
         fields = ["id", "pin_code", "village", "taluka", "district", "state"]
 
 
 class FpoProfileSerializer(serializers.ModelSerializer):
-    address = AddressSerializer(required=False, allow_null=True)
+    locality = LocalitySerializer(required=False, allow_null=True)
 
     def create(self, validated_data):
-        address_data = validated_data.pop("address", None)
+        locality_data = validated_data.pop("locality", None)
         app_user = self.context.get("app_user")
         if app_user is None:
             raise serializers.ValidationError("app_user is required in serializer context")
-        address = Address.objects.create(**address_data) if address_data else None
+
+        locality = None
+        if locality_data:
+            locality, _ = Locality.objects.get_or_create(**locality_data)
+
         return self.Meta.model.objects.create(
             app_user=app_user,
-            address=address,
+            locality=locality,
             **validated_data,
         )
 
@@ -42,27 +46,31 @@ class FpoProfileSerializer(serializers.ModelSerializer):
             "pan_file",
             "cin_file",
             "gst_file",
-            "address",
+            "locality",
             "app_user",
         ]
         read_only_fields = ["app_user"]
 
 
 class FarmerProfileSerializer(serializers.ModelSerializer):
-    address = AddressSerializer(required=False, allow_null=True)
+    locality = LocalitySerializer(required=False, allow_null=True)
     registered_with_fpo = serializers.PrimaryKeyRelatedField(
         queryset=FpoProfile.objects.all(), required=False, allow_null=True
     )
 
     def create(self, validated_data):
-        address_data = validated_data.pop("address", None)
+        locality_data = validated_data.pop("locality", None)
         app_user = self.context.get("app_user")
         if app_user is None:
             raise serializers.ValidationError("app_user is required in serializer context")
-        address = Address.objects.create(**address_data) if address_data else None
+
+        locality = None
+        if locality_data:
+            locality, _ = Locality.objects.get_or_create(**locality_data)
+
         return self.Meta.model.objects.create(
             app_user=app_user,
-            address=address,
+            locality=locality,
             **validated_data,
         )
 
@@ -76,7 +84,7 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
             "registered_with_fpo",
             "aadhaar_number",
             "aadhaar_file",
-            "address",
+            "locality",
             "app_user",
         ]
         read_only_fields = ["app_user"]
@@ -85,7 +93,7 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
 class UserRegistrationSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=6)
     role = serializers.ChoiceField(choices=AppUser.Role.choices)
-    address = AddressSerializer(required=True, write_only=True)
+    locality = LocalitySerializer(required=True, write_only=True)
 
     id = serializers.IntegerField(read_only=True)
     user_id = serializers.IntegerField(source="user.id", read_only=True)
@@ -135,7 +143,9 @@ class UserRegistrationSerializer(serializers.Serializer):
         role = attrs.get("role")
         derived_username = self._derive_username(role, attrs)
         if User.objects.filter(username=derived_username).exists():
-            raise serializers.ValidationError({"username": "A user with this username already exists."})
+            raise serializers.ValidationError(
+                {"username": "A user with this username already exists."}
+            )
 
         attrs["username"] = derived_username
 
@@ -181,13 +191,17 @@ class UserRegistrationSerializer(serializers.Serializer):
         if role == AppUser.Role.FARMER:
             value = (attrs.get("contact_number") or "").strip()
             if not value:
-                raise serializers.ValidationError({"contact_number": "This field is required for role 'farmer'."})
+                raise serializers.ValidationError(
+                    {"contact_number": "This field is required for role 'farmer'."}
+                )
             return value
 
         if role == AppUser.Role.FPO:
             value = (attrs.get("email") or "").strip()
             if not value:
-                raise serializers.ValidationError({"email": "This field is required for role 'fpo'."})
+                raise serializers.ValidationError(
+                    {"email": "This field is required for role 'fpo'."}
+                )
             return value
 
         raise serializers.ValidationError({"role": "Unsupported role"})
@@ -195,18 +209,19 @@ class UserRegistrationSerializer(serializers.Serializer):
     @transaction.atomic
     def create(self, validated_data):
         role = validated_data["role"]
-        address_data = validated_data.pop("address")
+        locality_data = validated_data.pop("locality")
         password = validated_data.pop("password")
         username = validated_data.pop("username")
+
         user = User.objects.create_user(username=username, password=password)
         app_user = AppUser.objects.create(user=user, role=role)
 
-        address = Address.objects.create(**address_data)
+        locality, _ = Locality.objects.get_or_create(**locality_data)
 
         if role == AppUser.Role.FARMER:
             FarmerProfile.objects.create(
                 app_user=app_user,
-                address=address,
+                locality=locality,
                 farmer_name=validated_data.get("farmer_name"),
                 contact_number=validated_data.get("contact_number"),
                 email=validated_data.get("email"),
@@ -218,7 +233,7 @@ class UserRegistrationSerializer(serializers.Serializer):
 
         FpoProfile.objects.create(
             app_user=app_user,
-            address=address,
+            locality=locality,
             fpo_name=validated_data.get("fpo_name"),
             contact_person_name=validated_data.get("contact_person_name"),
             email=validated_data.get("email"),
