@@ -17,3 +17,4 @@ class LocalitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Locality
         fields = ["id", "pin_code", "village", "taluka", "district", "state"]
+        validators = []
