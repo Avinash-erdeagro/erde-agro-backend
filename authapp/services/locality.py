@@ -5,7 +5,7 @@ def _normalize_whitespace(value):
 
 def normalize_locality_data(locality_data):
     return {
-        "pin_code": _normalize_whitespace(locality_data["pin_code"]).upper(),
+        "pin_code": _normalize_whitespace(locality_data["pin_code"]),
         "village": _normalize_whitespace(locality_data["village"]).title(),
         "taluka": _normalize_whitespace(locality_data["taluka"]).title(),
         "district": _normalize_whitespace(locality_data["district"]).title(),
