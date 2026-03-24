@@ -1,39 +1,6 @@
-from django.contrib.auth import get_user_model
 from django.db import models
-
-User = get_user_model()
-
-
-class Locality(models.Model):
-	pin_code = models.CharField(max_length=10)
-	village = models.CharField(max_length=150)
-	taluka = models.CharField(max_length=150)
-	district = models.CharField(max_length=150)
-	state = models.CharField(max_length=150)
-
-	class Meta:
-		constraints = [
-			models.UniqueConstraint(
-				fields=["pin_code", "village", "taluka", "district", "state"],
-				name="unique_locality_combination",
-			)
-		]
-
-	def __str__(self) -> str:
-		return f"{self.village}, {self.district}, {self.state}"
-
-
-class AppUser(models.Model):
-	class Role(models.TextChoices):
-		FPO = "fpo", "FPO"
-		FARMER = "farmer", "Farmer"
-
-	user = models.OneToOneField(User, on_delete=models.CASCADE)
-	role = models.CharField(max_length=20, choices=Role.choices)
-	
-	def __str__(self) -> str:
-		return f"{self.user.username} ({self.role})"
-
+from .user import AppUser
+from .locality import Locality
 
 class FpoProfile(models.Model):
 	app_user = models.OneToOneField(
