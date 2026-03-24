@@ -1,11 +1,7 @@
 from rest_framework import generics, viewsets
 
 from .models import FarmerProfile, FpoProfile
-from .serializers import (
-    FarmerProfileSerializer,
-    FpoProfileSerializer,
-    UserRegistrationSerializer,
-)
+from .api.serializers import UserRegistrationSerializer, FpoProfileSerializer, FarmerProfileSerializer
 
 
 class UserRegistrationView(generics.CreateAPIView):
