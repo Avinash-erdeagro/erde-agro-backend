@@ -1,5 +1,7 @@
-from rest_framework import generics
 from ..serializers import UserRegistrationSerializer
+from .base import BaseCreateAPIView
 
-class UserRegistrationView(generics.CreateAPIView):
+
+class UserRegistrationView(BaseCreateAPIView):
     serializer_class = UserRegistrationSerializer
+    success_message = "User registered successfully."
