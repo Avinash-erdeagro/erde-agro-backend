@@ -70,7 +70,6 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
             "id",
             "farmer_name",
             "contact_number",
-            "email",
             "registered_with_fpo",
             "aadhaar_number",
             "aadhaar_file",

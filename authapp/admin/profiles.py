@@ -20,4 +20,4 @@ class FpoProfileAdmin(admin.ModelAdmin):
 @admin.register(FarmerProfile)
 class FarmerProfileAdmin(admin.ModelAdmin):
     list_display = ("id", "farmer_name", "app_user", "contact_number", "locality")
-    search_fields = ("farmer_name", "contact_number", "aadhaar_number", "email")
+    search_fields = ("farmer_name", "contact_number", "aadhaar_number")

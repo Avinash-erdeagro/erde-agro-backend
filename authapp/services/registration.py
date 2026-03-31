@@ -23,7 +23,6 @@ def register_user(validated_data):
             locality=locality,
             farmer_name=validated_data.get("farmer_name"),
             contact_number=validated_data.get("contact_number"),
-            email=validated_data.get("email"),
             registered_with_fpo=validated_data.get("registered_with_fpo"),
             aadhaar_number=validated_data.get("aadhaar_number"),
             aadhaar_file=validated_data.get("aadhaar_file"),
