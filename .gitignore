@@ -12,3 +12,6 @@ media/
 
 # text dummy files
 developmentSteps.txt
+
+# firebase service account key
+config/firebase-service-account.json

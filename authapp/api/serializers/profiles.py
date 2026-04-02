@@ -1,10 +1,16 @@
 from rest_framework import serializers
 from .locality import LocalitySerializer
 from authapp.models import FarmerProfile, FpoProfile
-from authapp.services import get_or_create_locality
+from authapp.services import get_or_create_locality, normalize_indian_phone_number
 
 class FpoProfileSerializer(serializers.ModelSerializer):
     locality = LocalitySerializer(required=False, allow_null=True)
+
+    def validate_mobile(self, value):
+        try:
+            return normalize_indian_phone_number(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
 
     def create(self, validated_data):
         locality_data = validated_data.pop("locality", None)
@@ -47,6 +53,12 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
     registered_with_fpo = serializers.PrimaryKeyRelatedField(
         queryset=FpoProfile.objects.all(), required=False, allow_null=True
     )
+
+    def validate_contact_number(self, value):
+        try:
+            return normalize_indian_phone_number(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
 
     def create(self, validated_data):
         locality_data = validated_data.pop("locality", None)

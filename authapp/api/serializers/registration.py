@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .locality import LocalitySerializer
 from authapp.models import AppUser, FpoProfile
 from django.contrib.auth import get_user_model
-from authapp.services import register_user
+from authapp.services import normalize_indian_phone_number, register_user
 
 User = get_user_model()
 
@@ -41,6 +41,18 @@ class UserRegistrationSerializer(serializers.Serializer):
     pan_file = serializers.FileField(required=False, allow_null=True, write_only=True)
     cin_file = serializers.FileField(required=False, allow_null=True, write_only=True)
     gst_file = serializers.FileField(required=False, allow_null=True, write_only=True)
+
+    def validate_contact_number(self, value):
+        try:
+            return normalize_indian_phone_number(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+
+    def validate_mobile(self, value):
+        try:
+            return normalize_indian_phone_number(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
 
     def get_profile_type(self, obj):
         if obj.role == AppUser.Role.FPO:
@@ -106,7 +118,7 @@ class UserRegistrationSerializer(serializers.Serializer):
 
     def _derive_username(self, role, attrs):
         if role == AppUser.Role.FARMER:
-            value = (attrs.get("contact_number") or "").strip()
+            value = attrs.get("contact_number") or ""
             if not value:
                 raise serializers.ValidationError(
                     {"contact_number": "This field is required for role 'farmer'."}

@@ -1,6 +1,13 @@
+from django.core.validators import RegexValidator
 from django.db import models
 from .user import AppUser
 from .locality import Locality
+
+
+indian_mobile_validator = RegexValidator(
+	regex=r"^\+91\d{10}$",
+	message="Phone number must be stored in +91XXXXXXXXXX format.",
+)
 
 class FpoProfile(models.Model):
 	app_user = models.OneToOneField(
@@ -18,7 +25,7 @@ class FpoProfile(models.Model):
 	fpo_name = models.CharField(max_length=255)
 	contact_person_name = models.CharField(max_length=255)
 	email = models.EmailField()
-	mobile = models.CharField(max_length=20)
+	mobile = models.CharField(max_length=13, validators=[indian_mobile_validator])
 	gst_number = models.CharField(max_length=50)
 	pan_number = models.CharField(max_length=50)
 	cin_number = models.CharField(max_length=50)
@@ -44,7 +51,7 @@ class FarmerProfile(models.Model):
 		related_name="farmer_profiles",
 	)
 	farmer_name = models.CharField(max_length=255)
-	contact_number = models.CharField(max_length=20)
+	contact_number = models.CharField(max_length=13, validators=[indian_mobile_validator])
 	registered_with_fpo = models.ForeignKey(
 		FpoProfile,
 		on_delete=models.SET_NULL,

@@ -2,6 +2,7 @@ from .locality import LocalitySerializer, normalize_locality_data
 from .profiles import FarmerProfileSerializer, FpoProfileSerializer
 from .registration import UserRegistrationSerializer
 from .pincode import PincodeLookupResultSerializer
+from .authentication import FarmerFirebaseLoginSerializer
 
 __all__ = [
     "LocalitySerializer",
@@ -10,4 +11,5 @@ __all__ = [
     "FpoProfileSerializer",
     "UserRegistrationSerializer",
     "PincodeLookupResultSerializer",
+    "FarmerFirebaseLoginSerializer",
 ]
