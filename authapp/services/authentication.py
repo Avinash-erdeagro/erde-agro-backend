@@ -20,10 +20,10 @@ def login_farmer_with_firebase(id_token: str):
     sign_in_provider = firebase_data.get("sign_in_provider")
 
     if not phone_number:
-        raise AuthenticationError("Phone number not found in Firebase token.")
+        raise AuthenticationError("Something went wrong during authentication. Please try again.")
 
     if sign_in_provider != "phone":
-        raise AuthenticationError("Invalid sign-in provider.")
+        raise AuthenticationError("Something went wrong during authentication. Please try again.")
 
     try:
         normalized_phone = normalize_indian_phone_number(phone_number)
