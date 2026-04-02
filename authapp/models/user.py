@@ -5,8 +5,8 @@ User = get_user_model()
 
 class AppUser(models.Model):
 	class Role(models.TextChoices):
-		FPO = "fpo", "FPO"
-		FARMER = "farmer", "Farmer"
+		FPO = "FPO", "FPO"
+		FARMER = "FARMER", "FARMER"
 
 	user = models.OneToOneField(User, on_delete=models.CASCADE)
 	role = models.CharField(max_length=20, choices=Role.choices)

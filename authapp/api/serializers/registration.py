@@ -56,9 +56,9 @@ class UserRegistrationSerializer(serializers.Serializer):
 
     def get_profile_type(self, obj):
         if obj.role == AppUser.Role.FPO:
-            return "fpo"
+            return AppUser.Role.FPO
         if obj.role == AppUser.Role.FARMER:
-            return "farmer"
+            return AppUser.Role.FARMER
         return None
 
     def get_profile_id(self, obj):

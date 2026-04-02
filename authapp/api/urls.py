@@ -10,6 +10,6 @@ router.register("farmer-profiles", FarmerProfileViewSet, basename="farmer-profil
 urlpatterns = [
 	path("register/", UserRegistrationView.as_view(), name="register"),
     path("pincode/<str:pin_code>/", PincodeLookupView.as_view(), name="pincode-lookup"),
-    path("farmer/login/", FarmerFirebaseLoginView.as_view(), name="farmer-firebase-login"),
+    path("firebase-login/", FarmerFirebaseLoginView.as_view(), name="farmer-firebase-login"),
 	path("", include(router.urls)),
 ]
