@@ -1,4 +1,4 @@
-from rest_framework.authtoken.models import Token
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from authapp.models import AppUser, FarmerProfile
 from authapp.services.firebase import verify_firebase_id_token
@@ -10,7 +10,10 @@ class AuthenticationError(Exception):
 
 
 def login_farmer_with_firebase(id_token: str):
-    decoded_token = verify_firebase_id_token(id_token)
+    try:
+        decoded_token = verify_firebase_id_token(id_token)
+    except Exception as exc:
+        raise AuthenticationError("Invalid or expired Firebase token.") from exc
 
     phone_number = decoded_token.get("phone_number")
     firebase_data = decoded_token.get("firebase", {})
@@ -37,13 +40,11 @@ def login_farmer_with_firebase(id_token: str):
     if farmer.app_user.role != AppUser.Role.FARMER:
         raise AuthenticationError("User is not registered as a farmer.")
 
-    token, _ = Token.objects.get_or_create(user=farmer.app_user.user)
+    refresh = RefreshToken.for_user(farmer.app_user.user)
 
     return {
-        "token": token.key,
-        "user_id": farmer.app_user.user.id,
+        "access_token": str(refresh.access_token),
+        "refresh_token": str(refresh),
+        "user_name": farmer.farmer_name,
         "role": farmer.app_user.role,
-        "profile_id": farmer.id,
-        "profile_type": "farmer",
-        "contact_number": farmer.contact_number,
     }
