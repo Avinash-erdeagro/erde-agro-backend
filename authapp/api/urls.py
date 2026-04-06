@@ -8,6 +8,7 @@ from .views import (
     FPOProfileViewSet,
     PincodeLookupView,
     UserRegistrationView,
+    TokenRefreshApiView
 )
 
 router = DefaultRouter()
@@ -19,5 +20,6 @@ urlpatterns = [
     path("pincode/<str:pin_code>/", PincodeLookupView.as_view(), name="pincode-lookup"),
     path("firebase-login/", FarmerFirebaseLoginView.as_view(), name="farmer-firebase-login"),
     path("fpo/login/", FPOLoginView.as_view(), name="fpo-login"),
+    path("token/refresh/", TokenRefreshApiView.as_view(), name="token-refresh"),
     path("", include(router.urls)),
 ]
