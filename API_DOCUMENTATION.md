@@ -54,9 +54,7 @@ Validation failure format:
   "success": false,
   "message": "Validation failed.",
   "result": {
-    "email": [
-      "This field is required."
-    ]
+    "email": ["This field is required."]
   }
 }
 ```
@@ -402,6 +400,265 @@ Response format:
 {
   "success": true,
   "message": "Farmer profile deleted successfully.",
+  "result": null
+}
+```
+
+## 5. Farmer Firebase Login
+
+- URL: `POST /auth/firebase-login/`
+- Auth: None
+- What it does: Authenticates a farmer using a Firebase ID token (phone OTP). Returns JWT access and refresh tokens.
+
+Request body:
+
+```json
+{
+  "id_token": "<firebase_id_token>"
+}
+```
+
+Response format:
+
+```json
+{
+  "success": true,
+  "message": "Farmer login successful.",
+  "result": {
+    "access_token": "eyJ...",
+    "refresh_token": "eyJ...",
+    "user_name": "Suresh Patil",
+    "role": "FARMER"
+  }
+}
+```
+
+Failure format:
+
+```json
+{
+  "success": false,
+  "message": "Farmer account not found.",
+  "result": null
+}
+```
+
+## 6. FPO Login
+
+- URL: `POST /auth/fpo/login/`
+- Auth: None
+- What it does: Authenticates an FPO user using username and password. Returns JWT access and refresh tokens.
+
+Request body:
+
+```json
+{
+  "username": "fpo@example.com",
+  "password": "your_password"
+}
+```
+
+Response format:
+
+```json
+{
+  "success": true,
+  "message": "FPO login successful.",
+  "result": {
+    "access_token": "eyJ...",
+    "refresh_token": "eyJ...",
+    "user_name": "Green Agro Farmers Producer Company",
+    "role": "FPO"
+  }
+}
+```
+
+Failure format:
+
+```json
+{
+  "success": false,
+  "message": "Invalid username or password.",
+  "result": null
+}
+```
+
+## 7. Token Refresh
+
+- URL: `POST /auth/token/refresh/`
+- Auth: None
+- What it does: Accepts a valid refresh token and returns a new access token and a new rotated refresh token. The old refresh token is blacklisted after use.
+
+> **Note:** Access tokens expire in 30 minutes. Refresh tokens expire in 30 days. After every successful refresh, the old refresh token is invalidated — always store the new one.
+
+Request body:
+
+```json
+{
+  "refresh": "<your_refresh_token>"
+}
+```
+
+Response format:
+
+```json
+{
+  "success": true,
+  "message": "Token refreshed successfully.",
+  "result": {
+    "access_token": "eyJ...",
+    "refresh_token": "eyJ..."
+  }
+}
+```
+
+Failure format:
+
+```json
+{
+  "success": false,
+  "message": "Invalid or expired refresh token.",
+  "result": null
+}
+```
+
+## 8. Content APIs
+
+All content endpoints require authentication via `Authorization: Bearer <access_token>` header.
+
+### 8.1 Dashboard Videos (Combined)
+
+- URL: `GET /content/videos/`
+- Auth: Bearer token
+- What it does: Returns both featured videos and tutorial videos in a single response.
+
+Response format:
+
+```json
+{
+  "success": true,
+  "message": "Videos fetched successfully.",
+  "result": {
+    "featured": [
+      {
+        "id": 1,
+        "youtube_url": "https://www.youtube.com/watch?v=example",
+        "thumbnail": "https://s3.ap-south-1.amazonaws.com/.../featured-section/video/thumbnails/image.jpg",
+        "created_at": "2026-04-06T10:00:00Z"
+      }
+    ],
+    "tutorials": [
+      {
+        "id": 1,
+        "title": "How to use the app",
+        "description": "Step by step tutorial for farmers.",
+        "youtube_url": "https://www.youtube.com/watch?v=example2",
+        "thumbnail": "https://s3.ap-south-1.amazonaws.com/.../tutorial-section/video/tutorials/image.jpg",
+        "created_at": "2026-04-06T10:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+### 8.2 List Featured Videos
+
+- URL: `GET /content/featured-videos/`
+- Auth: Bearer token
+- What it does: Returns all featured videos.
+
+Response format:
+
+```json
+{
+  "success": true,
+  "message": "Featured videos fetched successfully.",
+  "result": [
+    {
+      "id": 1,
+      "youtube_url": "https://www.youtube.com/watch?v=example",
+      "thumbnail": "https://s3.ap-south-1.amazonaws.com/.../featured-section/video/thumbnails/image.jpg",
+      "created_at": "2026-04-06T10:00:00Z"
+    }
+  ]
+}
+```
+
+### 8.3 Retrieve Featured Video
+
+- URL: `GET /content/featured-videos/<id>/`
+- Auth: Bearer token
+- What it does: Returns a single featured video by id.
+
+Response format:
+
+```json
+{
+  "success": true,
+  "message": "Featured video fetched successfully.",
+  "result": {
+    "id": 1,
+    "youtube_url": "https://www.youtube.com/watch?v=example",
+    "thumbnail": "https://s3.ap-south-1.amazonaws.com/.../featured-section/video/thumbnails/image.jpg",
+    "created_at": "2026-04-06T10:00:00Z"
+  }
+}
+```
+
+### 8.4 List Tutorial Videos
+
+- URL: `GET /content/tutorial-videos/`
+- Auth: Bearer token
+- What it does: Returns all tutorial videos.
+
+Response format:
+
+```json
+{
+  "success": true,
+  "message": "Tutorial videos fetched successfully.",
+  "result": [
+    {
+      "id": 1,
+      "title": "How to use the app",
+      "description": "Step by step tutorial for farmers.",
+      "youtube_url": "https://www.youtube.com/watch?v=example2",
+      "thumbnail": "https://s3.ap-south-1.amazonaws.com/.../tutorial-section/video/tutorials/image.jpg",
+      "created_at": "2026-04-06T10:00:00Z"
+    }
+  ]
+}
+```
+
+### 8.5 Retrieve Tutorial Video
+
+- URL: `GET /content/tutorial-videos/<id>/`
+- Auth: Bearer token
+- What it does: Returns a single tutorial video by id.
+
+Response format:
+
+```json
+{
+  "success": true,
+  "message": "Tutorial video fetched successfully.",
+  "result": {
+    "id": 1,
+    "title": "How to use the app",
+    "description": "Step by step tutorial for farmers.",
+    "youtube_url": "https://www.youtube.com/watch?v=example2",
+    "thumbnail": "https://s3.ap-south-1.amazonaws.com/.../tutorial-section/video/tutorials/image.jpg",
+    "created_at": "2026-04-06T10:00:00Z"
+  }
+}
+```
+
+Unauthenticated request failure (applies to all content endpoints):
+
+```json
+{
+  "success": false,
+  "message": "Authentication failed.",
   "result": null
 }
 ```
