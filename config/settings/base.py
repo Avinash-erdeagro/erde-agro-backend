@@ -30,7 +30,7 @@ INSTALLED_APPS = [
     "storages",
     # Local
     "authapp",
-    "content",
+    "contentapp",
 ]
 
 MIDDLEWARE = [

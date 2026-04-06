@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from content.models import FeaturedVideo, TutorialVideo
+from contentapp.models import FeaturedVideo, TutorialVideo
 
 
 @admin.register(FeaturedVideo)
