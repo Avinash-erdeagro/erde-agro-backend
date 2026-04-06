@@ -1,7 +1,7 @@
 from .profiles import FarmerProfileViewSet, FPOProfileViewSet
 from .registration import UserRegistrationView
 from .pincode import PincodeLookupView
-from .authentication import FarmerFirebaseLoginView
+from .authentication import FarmerFirebaseLoginView, FPOLoginView
 
 __all__ = [
     "FarmerProfileViewSet",
@@ -9,4 +9,5 @@ __all__ = [
     "UserRegistrationView",
     "PincodeLookupView",
     "FarmerFirebaseLoginView",
+    "FPOLoginView",
 ]

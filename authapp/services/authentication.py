@@ -1,3 +1,4 @@
+from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from authapp.models import AppUser, FarmerProfile
@@ -47,4 +48,31 @@ def login_farmer_with_firebase(id_token: str):
         "refresh_token": str(refresh),
         "user_name": farmer.farmer_name,
         "role": farmer.app_user.role,
+    }
+
+
+def login_fpo(username: str, password: str):
+    user = authenticate(username=username.strip(), password=password)
+
+    if not user:
+        raise AuthenticationError("Invalid username or password.")
+
+    app_user = AppUser.objects.select_related("fpo_profile").filter(user=user).first()
+    if not app_user:
+        raise AuthenticationError("User account not found.")
+
+    if app_user.role != AppUser.Role.FPO:
+        raise AuthenticationError("User is not registered as an FPO.")
+
+    fpo_profile = getattr(app_user, "fpo_profile", None)
+    if not fpo_profile:
+        raise AuthenticationError("FPO profile not found.")
+
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        "access_token": str(refresh.access_token),
+        "refresh_token": str(refresh),
+        "user_name": fpo_profile.fpo_name,
+        "role": app_user.role,
     }

@@ -3,7 +3,7 @@ from .registration import register_user
 from .pincode import fetch_localities_by_pincode, PincodeLookupError
 from .firebase import verify_firebase_id_token
 from .phone import normalize_indian_phone_number
-from .authentication import AuthenticationError, login_farmer_with_firebase
+from .authentication import AuthenticationError, login_farmer_with_firebase, login_fpo
 
 __all__ = [
     "get_or_create_locality",
@@ -15,4 +15,5 @@ __all__ = [
     "normalize_indian_phone_number",
     "AuthenticationError",
     "login_farmer_with_firebase",
+    "login_fpo",
 ]
