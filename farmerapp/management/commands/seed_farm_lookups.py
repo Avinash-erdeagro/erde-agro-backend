@@ -1,11 +1,9 @@
 import requests
-from decouple import config
 from django.core.management.base import BaseCommand, CommandError
 from farmerapp.models import SoilType, IrrigationType, CropType
 
 
 IRRIWATCH_BASE_URL = "https://api.irriwatch.hydrosat.com/api/v1/reference"
-IRRIWATCH_TOKEN = config("IRRIWATCH_TOKEN")
 
 ENDPOINTS = [
     {"path": "/irrigation", "model": IrrigationType},
@@ -17,13 +15,21 @@ ENDPOINTS = [
 class Command(BaseCommand):
     help = "Seed soil types, irrigation types, and crop types from IrriWatch API"
 
-    def _fetch(self, path):
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--irriwatch-auth-token",
+            type=str,
+            required=True,
+            help="IrriWatch API token",
+        )
+
+    def _fetch(self, path, token):
         url = f"{IRRIWATCH_BASE_URL}{path}"
         response = requests.get(
             url,
             headers={
                 "accept": "application/json",
-                "authorization": f"Bearer {IRRIWATCH_TOKEN}",
+                "authorization": f"Bearer {token}",
             },
             timeout=30,
         )
@@ -31,12 +37,14 @@ class Command(BaseCommand):
         return response.json()
 
     def handle(self, *args, **options):
+        token = options["irriwatch_auth_token"]
+        
         for endpoint in ENDPOINTS:
             model = endpoint["model"]
             model_name = model.__name__
 
             try:
-                data = self._fetch(endpoint["path"])
+                data = self._fetch(endpoint["path"], token)
             except requests.RequestException as e:
                 raise CommandError(f"Failed to fetch {model_name} data: {e}")
 
