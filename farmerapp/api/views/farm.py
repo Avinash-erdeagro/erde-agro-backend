@@ -10,9 +10,14 @@ class FarmViewSet(FormattedResponseMixin, ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Farm.objects.select_related(
+        user = self.request.user
+        app_user = user.appuser
+        qs = Farm.objects.select_related(
             "farmer", "soil_type", "irrigation_type"
         ).prefetch_related("crops")
+        if app_user.role == "FARMER":
+            qs = qs.filter(farmer=app_user)
+        return qs
 
 
 class FarmCropViewSet(FormattedResponseMixin, ModelViewSet):
