@@ -14,9 +14,11 @@ class FarmViewSet(FormattedResponseMixin, ModelViewSet):
         app_user = user.appuser
         qs = Farm.objects.select_related(
             "farmer", "soil_type", "irrigation_type"
-        ).prefetch_related("crops")
+        ).prefetch_related("crops", "crops__crop_type")
         if app_user.role == "FARMER":
             qs = qs.filter(farmer=app_user)
+        elif app_user.role == "FPO":
+            qs = qs.filter(farmer__farmer_profile__registered_with_fpo=app_user.fpo_profile)
         return qs
 
 

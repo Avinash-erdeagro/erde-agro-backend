@@ -24,7 +24,7 @@ class FarmCropInline(admin.TabularInline):
 
 @admin.register(Farm)
 class FarmAdmin(admin.ModelAdmin):
-    list_display = ("id", "land_record_number", "farmer", "soil_type", "irrigation_type")
+    list_display = ("id", "farm_name", "land_record_number", "farmer", "soil_type", "irrigation_type", "area")
     inlines = [FarmCropInline]
 
 

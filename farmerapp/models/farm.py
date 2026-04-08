@@ -4,14 +4,12 @@ from authapp.models import AppUser
 
 
 class Farm(models.Model):
-    # instead lets have the foreign key to app_user
-    # what happends when a soil_type is deleted - we should not allow deletion if there are farms using it, so PROTECT is a good option
-
     farmer = models.ForeignKey(
         AppUser,
         on_delete=models.CASCADE,
         related_name="farms",
     )
+    farm_name = models.CharField(max_length=100, default="")
     land_record_number = models.CharField(max_length=50)
     soil_type = models.ForeignKey(
         "farmerapp.SoilType",
@@ -24,6 +22,10 @@ class Farm(models.Model):
         related_name="farms",
     )
     boundary = gis_models.PolygonField(srid=4326)  # GeoJSON polygon from React Native
+    area = models.FloatField(
+        help_text="Area in acres, calculated from boundary polygon.",
+        default=0,
+    )
     farm_document = models.FileField(
         upload_to="documents/farmer/farm/",
         null=True,
