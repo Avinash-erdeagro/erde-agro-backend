@@ -29,7 +29,7 @@ class FarmSerializer(serializers.ModelSerializer):
             "id", "farmer", "farm_name", "land_record_number", "soil_type", "irrigation_type",
             "boundary", "area", "farm_document", "crops", "created_at", "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "area", "created_at", "updated_at"]
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
@@ -75,30 +75,3 @@ class FarmSerializer(serializers.ModelSerializer):
             return Polygon(coords[0], srid=4326)
         except (KeyError, IndexError, TypeError, Exception) as e:
             raise serializers.ValidationError(f"Invalid boundary data: {e}")
-
-    @staticmethod
-    # TODO: CHECK if this can be optimized by caching the area for known polygons, or by using a more efficient library for 
-    # geodesic area calculation in Python instead of hitting the database every time.
-    def _calc_area_acres(polygon):
-        """Return geodesic area of the polygon in acres using PostGIS ST_Area(geography)."""
-        from django.db import connection
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT ST_Area(%s::geography)", [polygon.ewkt])
-            area_sq_m = cursor.fetchone()[0]
-        return round(area_sq_m / 4046.8564224, 2)
-
-    def create(self, validated_data):
-        backend_area = self._calc_area_acres(validated_data["boundary"])
-        frontend_area = round(validated_data.pop("area", 0) or 0, 2)
-        print(f"Backend area: {backend_area} acres, Frontend area: {frontend_area} acres")
-        validated_data["area"] = max(backend_area, frontend_area)
-        return super().create(validated_data)
-
-    def update(self, instance, validated_data):
-        if "boundary" in validated_data:
-            backend_area = self._calc_area_acres(validated_data["boundary"])
-            frontend_area = round(validated_data.pop("area", 0) or 0, 2)
-            validated_data["area"] = max(backend_area, frontend_area)
-        else:
-            validated_data.pop("area", None)
-        return super().update(instance, validated_data)

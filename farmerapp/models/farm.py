@@ -1,3 +1,5 @@
+import math
+
 from django.contrib.gis.db import models as gis_models
 from django.db import models
 from authapp.models import AppUser
@@ -36,3 +38,30 @@ class Farm(models.Model):
 
     def __str__(self):
         return f"Farm {self.land_record_number} – {self.farmer}"
+
+    def save(self, *args, **kwargs):
+        if self.boundary:
+            R = 6378137
+
+            def to_radians(degree):
+                return degree * (math.pi / 180)
+
+            coords = list(self.boundary.coords[0])
+            area = 0
+            num_points = len(coords)
+
+            for i in range(num_points):
+                x1 = coords[i][0]
+                y1 = coords[i][1]
+                x2 = coords[(i + 1) % num_points][0]
+                y2 = coords[(i + 1) % num_points][1]
+
+                area += to_radians(x1) * math.sin(to_radians(y2)) - to_radians(
+                    x2
+                ) * math.sin(to_radians(y1))
+
+            area = abs((area * R * R) / 2.0)
+            area_in_acres = area / 4046.8564224
+            self.area = round(area_in_acres, 2)
+
+        super().save(*args, **kwargs)
