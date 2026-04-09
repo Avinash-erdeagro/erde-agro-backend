@@ -52,7 +52,7 @@ class FarmSatelliteSubscription(models.Model):
         ordering = ["-created_at"]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(subscription_end__gte=models.F("subscription_start")),
+                condition=models.Q(subscription_end__gte=models.F("subscription_start")),
                 name="satellite_subscription_end_after_start",
             ),
             models.UniqueConstraint(
