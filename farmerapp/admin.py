@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import SoilType, IrrigationType, CropType, Farm, FarmCrop
+from .models import SoilType, IrrigationType, CropType, Farm, FarmCrop, FarmSatelliteSubscription
 
 
 @admin.register(SoilType)
@@ -31,3 +31,7 @@ class FarmAdmin(admin.ModelAdmin):
 @admin.register(FarmCrop)
 class FarmCropAdmin(admin.ModelAdmin):
     list_display = ("id", "farm", "crop_type", "plantation_date", "is_active")
+
+@admin.register(FarmSatelliteSubscription)
+class FarmSatelliteSubscriptionAdmin(admin.ModelAdmin):
+    list_display = ("id", "farm", "irriwatch_order_uuid", "subscription_start", "subscription_end", "status", "created_at")
