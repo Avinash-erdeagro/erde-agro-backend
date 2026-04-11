@@ -7,6 +7,7 @@ from .views import (
     FarmViewSet,
     FarmCropViewSet,
     FarmSatelliteResultsView,
+    FarmerSatelliteOverviewView,
 )
 
 router = DefaultRouter()
@@ -17,6 +18,11 @@ router.register("farms", FarmViewSet, basename="farm")
 router.register("farm-crops", FarmCropViewSet, basename="farm-crop")
 
 urlpatterns = [
+    path(
+        "satellite-overview/",
+        FarmerSatelliteOverviewView.as_view(),
+        name="farmer-satellite-overview",
+    ),
     path(
         "farms/<int:farm_id>/satellite-results/",
         FarmSatelliteResultsView.as_view(),

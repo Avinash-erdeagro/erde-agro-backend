@@ -88,3 +88,51 @@ def fetch_satellite_results_by_external_id(external_id: int):
         raise SatelliteServiceError("Invalid response from satellite service.")
 
     return data
+
+
+def fetch_satellite_metrics_by_external_ids(*, observation_date: str, external_ids: list[int]):
+    if not external_ids:
+        return {
+            "observation_date": observation_date,
+            "results": [],
+        }
+
+    token = _build_internal_auth_token()
+    url = (
+        f"{settings.SATELLITE_SERVICE_BASE_URL}"
+        "/internal/satellite-metrics/by-external-ids"
+    )
+
+    try:
+        response = requests.post(
+            url,
+            json={
+                "observation_date": observation_date,
+                "external_ids": external_ids,
+            },
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+            timeout=settings.SATELLITE_SERVICE_TIMEOUT,
+        )
+    except requests.RequestException as exc:
+        raise SatelliteServiceError(
+            "Failed to connect to satellite service."
+        ) from exc
+
+    try:
+        data = response.json()
+    except ValueError:
+        data = None
+
+    if response.status_code >= 400:
+        message = None
+        if isinstance(data, dict):
+            message = data.get("detail") or data.get("message") or data.get("error")
+        raise SatelliteServiceError(message or "Failed to fetch satellite metrics.")
+
+    if data is None:
+        raise SatelliteServiceError("Invalid response from satellite service.")
+
+    return data
