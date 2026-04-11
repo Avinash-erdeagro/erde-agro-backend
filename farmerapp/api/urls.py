@@ -6,6 +6,7 @@ from .views import (
     CropTypeViewSet,
     FarmViewSet,
     FarmCropViewSet,
+    FarmSatelliteInsightsView,
     FarmSatelliteResultsView,
     FarmerSatelliteOverviewView,
 )
@@ -27,6 +28,11 @@ urlpatterns = [
         "farms/<int:farm_id>/satellite-results/",
         FarmSatelliteResultsView.as_view(),
         name="farm-satellite-results",
+    ),
+    path(
+        "farms/<int:farm_id>/satellite-insights/",
+        FarmSatelliteInsightsView.as_view(),
+        name="farm-satellite-insights",
     ),
     path("", include(router.urls)),
 ]
