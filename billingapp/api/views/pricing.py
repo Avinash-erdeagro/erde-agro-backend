@@ -68,26 +68,7 @@ class SatellitePricingView(BaseAPIView):
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
-        plan_definitions = []
-        summary_by_plan = []
         farm_results = []
-
-        for plan in plans:
-            plan_definitions.append(
-                {
-                    "plan_id": plan.id,
-                    "name": plan.name,
-                    "duration_days": plan.duration_days,
-                    "duration_months": plan.duration_months,
-                    "base_price_per_acre": float(plan.base_price_per_acre),
-                    "gst_percent": float(plan.gst_percent),
-                    "total_price_per_acre": float(plan.total_price_per_acre),
-                    "commission_percent": float(plan.commission_percent),
-                    "commission_amount_per_acre": float(plan.commission_amount_per_acre),
-                    "commission_gst_per_acre": float(plan.commission_gst_per_acre),
-                    "total_commission_per_acre": float(plan.total_commission_per_acre),
-                }
-            )
 
         plan_totals = {
             plan.id: {
@@ -126,9 +107,6 @@ class SatellitePricingView(BaseAPIView):
                         "duration_months": plan.duration_months,
                         "price_per_acre": float(plan.total_price_per_acre),
                         "total_amount": float(total_amount),
-                        "commission_percent": float(plan.commission_percent),
-                        "commission_per_acre": float(plan.total_commission_per_acre),
-                        "total_commission": float(total_commission),
                     }
                 )
 
@@ -146,26 +124,35 @@ class SatellitePricingView(BaseAPIView):
                 }
             )
 
+        total_amount = []
         for plan in plans:
             summary = plan_totals[plan.id]
-            summary_by_plan.append(
+            total_amount.append(
                 {
                     "plan_id": summary["plan_id"],
                     "name": summary["name"],
                     "duration_days": summary["duration_days"],
                     "duration_months": summary["duration_months"],
+                    "price_per_acre": float(plan.total_price_per_acre),
                     "total_amount": float(summary["total_amount"]),
+                    "commission_percent": float(plan.commission_percent),
+                    "commission_per_acre": float(plan.total_commission_per_acre),
                     "total_commission": float(summary["total_commission"]),
                 }
             )
 
+        if app_user.role == "FARMER":
+            result = {
+                "farms": farm_results,
+            }
+        else:
+            result = {
+                "total_amount": total_amount,
+            }
+
         return api_response(
             success=True,
             message="Satellite plan pricing fetched successfully.",
-            result={
-                "plans": plan_definitions,
-                "farms": farm_results,
-                "summary_by_plan": summary_by_plan,
-            },
+            result=result,
             status_code=status.HTTP_200_OK,
         )
