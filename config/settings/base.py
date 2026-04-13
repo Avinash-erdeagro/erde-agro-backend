@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "contentapp",
     "farmerapp",
     "billingapp",
+    "fpoapp",
 ]
 
 MIDDLEWARE = [

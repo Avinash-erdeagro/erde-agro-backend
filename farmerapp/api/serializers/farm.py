@@ -4,6 +4,7 @@ from django.contrib.gis.geos import Polygon
 from rest_framework import serializers
 
 from farmerapp.models import Farm, FarmCrop
+from authapp.models import FarmerProfile
 
 
 class FarmCropSerializer(serializers.ModelSerializer):
@@ -22,11 +23,12 @@ class FarmSerializer(serializers.ModelSerializer):
     crops = FarmCropSerializer(many=True, read_only=True)
     boundary = serializers.JSONField()
     farmer = serializers.PrimaryKeyRelatedField(queryset=Farm.farmer.field.related_model.objects.all(), required=False)
+    farmer_id = serializers.IntegerField(required=False, write_only=True)
 
     class Meta:
         model = Farm
         fields = [
-            "id", "farmer", "farm_name", "land_record_number", "soil_type", "irrigation_type",
+            "id", "farmer", "farmer_id", "farm_name", "land_record_number", "soil_type", "irrigation_type",
             "boundary", "area", "farm_document", "crops", "created_at", "updated_at",
         ]
         read_only_fields = ["id", "area", "created_at", "updated_at"]
@@ -46,15 +48,31 @@ class FarmSerializer(serializers.ModelSerializer):
         role = app_user.role
 
         if role == "FARMER":
-            if "farmer" in attrs:
+            if "farmer" in attrs or "farmer_id" in attrs:
                 raise serializers.ValidationError(
-                    {"farmer": "Farmers cannot specify a farmer ID. It is inferred from the access token."}
+                    {"farmer_id": "Farmers cannot specify a farmer ID. It is inferred from the access token."}
                 )
             attrs["farmer"] = app_user
         elif role == "FPO":
-            if "farmer" not in attrs:
+            farmer_profile_id = attrs.pop("farmer_id", None)
+
+            if farmer_profile_id is not None:
+                farmer_profile = (
+                    FarmerProfile.objects.select_related("app_user", "registered_with_fpo")
+                    .filter(
+                        id=farmer_profile_id,
+                        registered_with_fpo=app_user.fpo_profile,
+                    )
+                    .first()
+                )
+                if not farmer_profile:
+                    raise serializers.ValidationError(
+                        {"farmer_id": "Invalid farmer ID for this FPO."}
+                    )
+                attrs["farmer"] = farmer_profile.app_user
+            else:
                 raise serializers.ValidationError(
-                    {"farmer": "FPO users must provide a farmer ID."}
+                    {"farmer_id": "FPO users must provide a farmer ID."}
                 )
         else:
             raise serializers.ValidationError("Unknown user role.")
