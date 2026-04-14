@@ -4,14 +4,18 @@ from rest_framework.permissions import IsAuthenticated
 
 from authapp.api.responses import api_response
 from authapp.api.views.base import BaseAPIView
-from farmerapp.models import Farm, SatelliteSubscriptionStatus
+from authapp.models import AppUser
+from farmerapp.models import Farm, SatelliteSubscriptionStatus, FarmCrop, FarmSatelliteSubscription
 from farmerapp.api.serializers import FarmerSatelliteOverviewQuerySerializer
 from farmerapp.services import (
     SatelliteServiceError,
+    fetch_farm_events_by_external_ids,
     fetch_farm_insights,
     fetch_satellite_metrics_by_external_ids,
     fetch_satellite_results_by_external_id,
 )
+from django.db.models import Prefetch, OuterRef, Subquery
+
 
 
 class FarmSatelliteResultsView(BaseAPIView):
@@ -329,6 +333,157 @@ class FarmerSatelliteOverviewView(BaseAPIView):
                         "items": farm_groups["active"],
                     },
                 },
+            },
+            status_code=status.HTTP_200_OK,
+        )
+
+class FarmSatelliteEventsView(BaseAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_filtered_queryset(self, app_user):
+        """
+        Step 1:
+        - Filter farms based on role
+        - Only include farms whose latest subscription is SYNCING
+        """
+
+        queryset = Farm.objects.all()
+
+        # 🔹 Role-based filtering
+        if app_user.role == AppUser.Role.FARMER:
+            queryset = queryset.filter(farmer=app_user)
+
+        elif app_user.role == AppUser.Role.FPO:
+            queryset = queryset.filter(
+                farmer__farmer_profile__registered_with_fpo=app_user.fpo_profile
+            )
+
+        else:
+            return Farm.objects.none()
+
+        # 🔹 Subquery: latest subscription per farm
+        latest_subscription_qs = FarmSatelliteSubscription.objects.filter(
+            farm_id=OuterRef("pk")   # ✅ FIXED HERE
+        ).order_by("-created_at")
+
+        # 🔹 Annotate latest subscription status
+        queryset = queryset.annotate(
+            latest_subscription_status=Subquery(
+                latest_subscription_qs.values("status")[:1]
+            )
+        )
+
+        # 🔹 Filter only farms with SYNCING subscriptions
+        queryset = queryset.filter(
+            latest_subscription_status__isnull=False,
+            latest_subscription_status=SatelliteSubscriptionStatus.SYNCING,
+        )
+
+        return queryset
+
+    def get_optimized_queryset(self, queryset):
+        """
+        Step 2:
+        - Fetch only required fields
+        - Prefetch crops efficiently
+        """
+
+        crop_queryset = (
+            FarmCrop.objects
+            .select_related("crop_type")
+            .order_by("-is_active")
+        )
+
+        return (
+            queryset
+            .only("id", "farm_name", "area")
+            .prefetch_related(
+                Prefetch("crops", queryset=crop_queryset)
+            )
+        )
+
+    def build_farm_payload(self, farms):
+        """
+        Step 3:
+        Build response payload efficiently
+        """
+        farm_items = []
+
+        for farm in farms:
+            crops = farm.crops.all()
+            crop = crops[0] if crops else None  # ✅ cleaner than iter()
+
+            farm_items.append(
+                {
+                    "farm_id": farm.id,
+                    "farm_name": farm.farm_name,
+                    "area": farm.area,
+                    "crop_name": crop.crop_type.name if crop else None,
+                }
+            )
+
+        return farm_items
+
+    def get(self, request):
+        app_user = request.user.appuser
+
+        # 🚫 Role validation
+        if app_user.role not in (AppUser.Role.FARMER, AppUser.Role.FPO):
+            return api_response(
+                success=False,
+                message="This API is available only for farmer and FPO users.",
+                result=None,
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        # ✅ Validate query params
+        serializer = FarmerSatelliteOverviewQuerySerializer(
+            data=request.query_params
+        )
+        serializer.is_valid(raise_exception=True)
+        observation_date = serializer.validated_data["observation_date"]
+
+        # ✅ Step 1: Filter (includes subscription logic)
+        queryset = self.get_filtered_queryset(app_user)
+
+        # ✅ Step 2: Optimize
+        queryset = self.get_optimized_queryset(queryset)
+
+        # ⚠️ Evaluate queryset once
+        farms = list(queryset)
+
+        # ✅ Build farm data
+        farm_items = self.build_farm_payload(farms)
+
+        # Extract external IDs
+        external_ids = [farm["farm_id"] for farm in farm_items]
+
+        # ✅ External satellite service call
+        try:
+            satellite_events = fetch_farm_events_by_external_ids(
+                observation_date=observation_date.isoformat(),
+                external_ids=external_ids,
+            )
+        except SatelliteServiceError as exc:
+            return api_response(
+                success=False,
+                message=str(exc),
+                result=None,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # ✅ Final response
+        return api_response(
+            success=True,
+            message="Farm satellite events fetched successfully.",
+            result={
+                "observation_date": satellite_events.get(
+                    "observation_date",
+                    observation_date.isoformat(),
+                ),
+                "farms_count": len(farm_items),
+                "farms": farm_items,
+                "satellite_events": satellite_events,
             },
             status_code=status.HTTP_200_OK,
         )
