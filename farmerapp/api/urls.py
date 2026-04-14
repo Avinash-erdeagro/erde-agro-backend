@@ -9,6 +9,7 @@ from .views import (
     FarmSatelliteEventsView,
     FarmSatelliteInsightsView,
     FarmSatelliteResultsView,
+    FarmerSatelliteMapLayersView,
     FarmerSatelliteOverviewView,
 )
 
@@ -29,6 +30,11 @@ urlpatterns = [
         "satellite-overview/",
         FarmerSatelliteOverviewView.as_view(),
         name="farmer-satellite-overview",
+    ),
+    path(
+        "satellite-map-layers/",
+        FarmerSatelliteMapLayersView.as_view(),
+        name="farmer-satellite-map-layers",
     ),
     path(
         "farms/<int:farm_id>/satellite-results/",

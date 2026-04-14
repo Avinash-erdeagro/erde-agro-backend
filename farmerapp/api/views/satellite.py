@@ -11,6 +11,7 @@ from farmerapp.services import (
     SatelliteServiceError,
     fetch_farm_events_by_external_ids,
     fetch_farm_insights,
+    fetch_farm_map_layers_by_external_ids,
     fetch_satellite_metrics_by_external_ids,
     fetch_satellite_results_by_external_id,
 )
@@ -484,6 +485,106 @@ class FarmSatelliteEventsView(BaseAPIView):
                 "farms_count": len(farm_items),
                 "farms": farm_items,
                 "satellite_events": satellite_events,
+            },
+            status_code=status.HTTP_200_OK,
+        )
+
+
+class FarmerSatelliteMapLayersView(BaseAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self, app_user):
+        latest_subscription_qs = FarmSatelliteSubscription.objects.filter(
+            farm_id=OuterRef("pk")
+        ).order_by("-created_at")
+
+        crop_queryset = FarmCrop.objects.select_related("crop_type").order_by("-is_active")
+
+        return (
+            Farm.objects.filter(farmer=app_user)
+            .annotate(
+                latest_subscription_status=Subquery(
+                    latest_subscription_qs.values("status")[:1]
+                )
+            )
+            .filter(latest_subscription_status=SatelliteSubscriptionStatus.SYNCING)
+            .only("id", "farm_name", "area")
+            .prefetch_related(Prefetch("crops", queryset=crop_queryset))
+        )
+
+    def build_farm_payload(self, farms, layers_by_farm_id):
+        farm_items = []
+
+        for farm in farms:
+            crop = next(iter(farm.crops.all()), None)
+            layers_result = layers_by_farm_id.get(farm.id, {})
+
+            farm_items.append(
+                {
+                    "farm_id": farm.id,
+                    "farm_name": farm.farm_name,
+                    "area": farm.area,
+                    "crop_name": crop.crop_type.name if crop else None,
+                    "observation_date": layers_result.get("observation_date"),
+                    "layers": layers_result.get("layers", []),
+                }
+            )
+
+        return farm_items
+
+    def get(self, request):
+        app_user = request.user.appuser
+
+        if app_user.role != AppUser.Role.FARMER:
+            return api_response(
+                success=False,
+                message="This API is available only for farmer users.",
+                result=None,
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = FarmerSatelliteOverviewQuerySerializer(
+            data=request.query_params
+        )
+        serializer.is_valid(raise_exception=True)
+        observation_date = serializer.validated_data["observation_date"]
+
+        farms = list(self.get_queryset(app_user))
+        external_ids = [farm.id for farm in farms]
+
+        try:
+            satellite_layers = fetch_farm_map_layers_by_external_ids(
+                observation_date=observation_date.isoformat(),
+                external_ids=external_ids,
+            )
+        except SatelliteServiceError as exc:
+            return api_response(
+                success=False,
+                message=str(exc),
+                result=None,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        layers_by_farm_id = {
+            item["external_id"]: {
+                key: value
+                for key, value in item.items()
+                if key != "external_id"
+            }
+            for item in satellite_layers.get("results", [])
+            if isinstance(item, dict) and item.get("external_id") is not None
+        }
+
+        return api_response(
+            success=True,
+            message="Farmer farm map layers fetched successfully.",
+            result={
+                "observation_date": satellite_layers.get(
+                    "observation_date",
+                    observation_date.isoformat(),
+                ),
+                "farms_count": len(farms),
+                "farms": self.build_farm_payload(farms, layers_by_farm_id),
             },
             status_code=status.HTTP_200_OK,
         )
