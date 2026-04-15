@@ -17,7 +17,7 @@ class SatellitePricingView(BaseAPIView):
     def _get_accessible_farms(self, app_user):
         queryset = Farm.objects.select_related(
             "farmer", "soil_type", "irrigation_type"
-        ).prefetch_related("crops", "crops__crop_type")
+        ).prefetch_related("crops", "crops__primary_crop")
 
         if app_user.role == "FARMER":
             return queryset.filter(farmer=app_user)
@@ -119,7 +119,7 @@ class SatellitePricingView(BaseAPIView):
                     "farm_name": farm.farm_name,
                     "area": farm.area,
                     "chargeable_area": chargeable_area,
-                    "crop_name": active_crop.crop_type.name if active_crop else None,
+                    "crop_name": active_crop.primary_crop.name if active_crop else None,
                     "plans": farm_plans,
                 }
             )

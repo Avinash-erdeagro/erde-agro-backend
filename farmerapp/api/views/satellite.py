@@ -27,7 +27,7 @@ class FarmSatelliteResultsView(BaseAPIView):
         app_user = user.appuser
         queryset = Farm.objects.select_related(
             "farmer", "soil_type", "irrigation_type"
-        ).prefetch_related("crops", "crops__crop_type")
+        ).prefetch_related("crops", "crops__primary_crop")
 
         if app_user.role == "FARMER":
             queryset = queryset.filter(farmer=app_user)
@@ -95,7 +95,7 @@ class FarmSatelliteInsightsView(BaseAPIView):
         app_user = user.appuser
         queryset = Farm.objects.select_related(
             "farmer", "soil_type", "irrigation_type"
-        ).prefetch_related("crops", "crops__crop_type")
+        ).prefetch_related("crops", "crops__primary_crop")
 
         if app_user.role == "FARMER":
             queryset = queryset.filter(farmer=app_user)
@@ -187,7 +187,7 @@ class FarmerSatelliteOverviewView(BaseAPIView):
         farms = list(
             Farm.objects.filter(farmer=app_user)
             .select_related("soil_type", "irrigation_type")
-            .prefetch_related("crops", "crops__crop_type", "satellite_subscriptions")
+            .prefetch_related("crops", "crops__primary_crop", "satellite_subscriptions")
         )
 
         syncing_farm_ids = []
@@ -207,7 +207,7 @@ class FarmerSatelliteOverviewView(BaseAPIView):
             if active_crop is None:
                 active_crop = next(iter(farm.crops.all()), None)
 
-            crop_name = active_crop.crop_type.name if active_crop else None
+            crop_name = active_crop.primary_crop.name if active_crop else None
             subscription = next(iter(farm.satellite_subscriptions.all()), None)
 
             if crop_name:
@@ -391,7 +391,7 @@ class FarmSatelliteEventsView(BaseAPIView):
 
         crop_queryset = (
             FarmCrop.objects
-            .select_related("crop_type")
+            .select_related("primary_crop")
             .order_by("-is_active")
         )
 
@@ -419,7 +419,7 @@ class FarmSatelliteEventsView(BaseAPIView):
                     "farm_id": farm.id,
                     "farm_name": farm.farm_name,
                     "area": farm.area,
-                    "crop_name": crop.crop_type.name if crop else None,
+                    "crop_name": crop.primary_crop.name if crop else None,
                 }
             )
 
@@ -498,7 +498,7 @@ class FarmerSatelliteMapLayersView(BaseAPIView):
             farm_id=OuterRef("pk")
         ).order_by("-created_at")
 
-        crop_queryset = FarmCrop.objects.select_related("crop_type").order_by("-is_active")
+        crop_queryset = FarmCrop.objects.select_related("primary_crop").order_by("-is_active")
 
         return (
             Farm.objects.filter(farmer=app_user)
@@ -524,7 +524,7 @@ class FarmerSatelliteMapLayersView(BaseAPIView):
                     "farm_id": farm.id,
                     "farm_name": farm.farm_name,
                     "area": farm.area,
-                    "crop_name": crop.crop_type.name if crop else None,
+                    "crop_name": crop.primary_crop.name if crop else None,
                     "observation_date": layers_result.get("observation_date"),
                     "layers": layers_result.get("layers", []),
                 }
