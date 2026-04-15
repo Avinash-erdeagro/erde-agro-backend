@@ -7,10 +7,18 @@ class FarmCrop(models.Model):
         on_delete=models.CASCADE,
         related_name="crops",
     )
-    crop_type = models.ForeignKey(
+    primary_crop = models.ForeignKey(
         "farmerapp.CropType",
         on_delete=models.PROTECT,
         related_name="farm_crops",
+    )
+    intercrop = models.ForeignKey(
+        "farmerapp.CropType",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="intercrop_farm_crops",
+        help_text="Optional second crop grown alongside the primary crop (intercropping).",
     )
     plantation_date = models.DateField()
     is_active = models.BooleanField(default=True)  # current standing crop
@@ -20,7 +28,10 @@ class FarmCrop(models.Model):
         ordering = ["-plantation_date"]
 
     def __str__(self):
-        return f"{self.crop_type.name} on Farm {self.farm.land_record_number}"
+        label = self.primary_crop.name
+        if self.intercrop_id:
+            label = f"{label} + {self.intercrop.name}"
+        return f"{label} on Farm {self.farm.land_record_number}"
 
     def save(self, *args, **kwargs):
         is_new = self._state.adding

@@ -10,12 +10,16 @@ from authapp.models import FarmerProfile
 class FarmCropSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmCrop
-        fields = ["id", "farm", "crop_type", "plantation_date", "is_active", "created_at"]
+        fields = [
+            "id", "farm", "primary_crop", "intercrop",
+            "plantation_date", "is_active", "created_at",
+        ]
         read_only_fields = ["id", "created_at"]
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-        rep["crop_type"] = instance.crop_type.name
+        rep["primary_crop"] = instance.primary_crop.name
+        rep["intercrop"] = instance.intercrop.name if instance.intercrop else None
         return rep
 
 
