@@ -11,15 +11,43 @@ class FarmCropSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmCrop
         fields = [
-            "id", "farm", "primary_crop", "intercrop",
+            "id", "farm",
+            "primary_crop", "custom_primary_crop_name", "primary_crop_variety",
+            "intercrop", "custom_intercrop_name", "intercrop_variety",
             "plantation_date", "is_active", "created_at",
         ]
         read_only_fields = ["id", "created_at"]
 
+    def validate(self, attrs):
+        primary_crop = attrs.get("primary_crop")
+        custom_primary = attrs.get("custom_primary_crop_name", "")
+        if not primary_crop and not custom_primary:
+            raise serializers.ValidationError(
+                {"primary_crop": "Provide either a crop type ID or a custom crop name."}
+            )
+        if primary_crop and custom_primary:
+            raise serializers.ValidationError(
+                {"custom_primary_crop_name": "Cannot specify both a crop type and a custom name."}
+            )
+
+        intercrop = attrs.get("intercrop")
+        custom_intercrop = attrs.get("custom_intercrop_name", "")
+        if intercrop and custom_intercrop:
+            raise serializers.ValidationError(
+                {"custom_intercrop_name": "Cannot specify both a crop type and a custom name for intercrop."}
+            )
+
+        return attrs
+
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-        rep["primary_crop"] = instance.primary_crop.name
-        rep["intercrop"] = instance.intercrop.name if instance.intercrop else None
+        rep["primary_crop"] = instance.primary_crop_name
+        rep["primary_crop_variety"] = instance.primary_crop_variety or None
+        rep["intercrop"] = instance.intercrop_name
+        rep["intercrop_variety"] = instance.intercrop_variety or None
+        # Remove internal custom fields from response
+        rep.pop("custom_primary_crop_name", None)
+        rep.pop("custom_intercrop_name", None)
         return rep
 
 

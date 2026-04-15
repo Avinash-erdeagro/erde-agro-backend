@@ -119,7 +119,7 @@ class SatellitePricingView(BaseAPIView):
                     "farm_name": farm.farm_name,
                     "area": farm.area,
                     "chargeable_area": chargeable_area,
-                    "crop_name": active_crop.primary_crop.name if active_crop else None,
+                    "crop_name": active_crop.primary_crop_name if active_crop else None,
                     "plans": farm_plans,
                 }
             )

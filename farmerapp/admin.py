@@ -30,7 +30,7 @@ class FarmAdmin(admin.ModelAdmin):
 
 @admin.register(FarmCrop)
 class FarmCropAdmin(admin.ModelAdmin):
-    list_display = ("id", "farm", "primary_crop", "intercrop", "plantation_date", "is_active")
+    list_display = ("id", "farm", "primary_crop", "primary_crop_variety", "intercrop", "intercrop_variety", "plantation_date", "is_active")
     list_filter = ("is_active",)
 
 @admin.register(FarmSatelliteSubscription)

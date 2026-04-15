@@ -207,7 +207,7 @@ class FarmerSatelliteOverviewView(BaseAPIView):
             if active_crop is None:
                 active_crop = next(iter(farm.crops.all()), None)
 
-            crop_name = active_crop.primary_crop.name if active_crop else None
+            crop_name = active_crop.primary_crop_name if active_crop else None
             subscription = next(iter(farm.satellite_subscriptions.all()), None)
 
             if crop_name:
@@ -419,7 +419,7 @@ class FarmSatelliteEventsView(BaseAPIView):
                     "farm_id": farm.id,
                     "farm_name": farm.farm_name,
                     "area": farm.area,
-                    "crop_name": crop.primary_crop.name if crop else None,
+                    "crop_name": crop.primary_crop_name if crop else None,
                 }
             )
 
@@ -524,7 +524,7 @@ class FarmerSatelliteMapLayersView(BaseAPIView):
                     "farm_id": farm.id,
                     "farm_name": farm.farm_name,
                     "area": farm.area,
-                    "crop_name": crop.primary_crop.name if crop else None,
+                    "crop_name": crop.primary_crop_name if crop else None,
                     "observation_date": layers_result.get("observation_date"),
                     "layers": layers_result.get("layers", []),
                 }
