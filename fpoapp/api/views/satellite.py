@@ -36,7 +36,7 @@ class FPOSatelliteOverviewView(BaseAPIView):
                 farmer__farmer_profile__registered_with_fpo=app_user.fpo_profile
             )
             .select_related("soil_type", "irrigation_type")
-            .prefetch_related("crops", "crops__crop_type", "satellite_subscriptions")
+            .prefetch_related("crops", "crops__primary_crop", "satellite_subscriptions")
         )
 
         syncing_farm_ids = []
@@ -56,7 +56,7 @@ class FPOSatelliteOverviewView(BaseAPIView):
             if active_crop is None:
                 active_crop = next(iter(farm.crops.all()), None)
 
-            crop_name = active_crop.crop_type.name if active_crop else None
+            crop_name = active_crop.primary_crop_name if active_crop else None
             subscription = next(iter(farm.satellite_subscriptions.all()), None)
 
             if crop_name:

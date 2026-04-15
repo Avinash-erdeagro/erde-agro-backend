@@ -127,6 +127,8 @@ class SatellitePricingView(BaseAPIView):
         total_amount = []
         for plan in plans:
             summary = plan_totals[plan.id]
+            payable_per_acre = plan.total_price_per_acre - plan.total_commission_per_acre
+            total_payable = summary["total_amount"] - summary["total_commission"]
             total_amount.append(
                 {
                     "plan_id": summary["plan_id"],
@@ -135,9 +137,8 @@ class SatellitePricingView(BaseAPIView):
                     "duration_months": summary["duration_months"],
                     "price_per_acre": float(plan.total_price_per_acre),
                     "total_amount": float(summary["total_amount"]),
-                    "commission_percent": float(plan.commission_percent),
-                    "commission_per_acre": float(plan.total_commission_per_acre),
-                    "total_commission": float(summary["total_commission"]),
+                    "payable_per_acre": float(payable_per_acre),
+                    "total_payable": float(total_payable),
                 }
             )
 
