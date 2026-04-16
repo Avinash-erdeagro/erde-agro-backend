@@ -89,3 +89,78 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
             "app_user",
         ]
         read_only_fields = ["app_user"]
+
+
+class FarmerMyProfileSerializer(serializers.ModelSerializer):
+    locality = LocalitySerializer(required=False, allow_null=True)
+    registered_with_fpo = serializers.PrimaryKeyRelatedField(
+        queryset=FpoProfile.objects.all(), required=False, allow_null=True
+    )
+
+    class Meta:
+        model = FarmerProfile
+        fields = [
+            "id",
+            "farmer_name",
+            "contact_number",
+            "registered_with_fpo",
+            "aadhaar_number",
+            "aadhaar_file",
+            "locality",
+        ]
+        read_only_fields = ["id", "contact_number"]
+
+    def update(self, instance, validated_data):
+        locality_data = validated_data.pop("locality", None)
+        if locality_data is not None:
+            instance.locality = get_or_create_locality(locality_data)
+        return super().update(instance, validated_data)
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        if instance.registered_with_fpo:
+            rep["registered_with_fpo"] = {
+                "id": instance.registered_with_fpo.id,
+                "fpo_name": instance.registered_with_fpo.fpo_name,
+            }
+        return rep
+
+
+class FPOMyProfileSerializer(serializers.ModelSerializer):
+    locality = LocalitySerializer(required=False, allow_null=True)
+
+    def validate_mobile(self, value):
+        try:
+            return normalize_indian_phone_number(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+
+    class Meta:
+        model = FpoProfile
+        fields = [
+            "id",
+            "fpo_name",
+            "contact_person_name",
+            "email",
+            "mobile",
+            "gst_number",
+            "pan_number",
+            "cin_number",
+            "pan_file",
+            "cin_file",
+            "gst_file",
+            "locality",
+        ]
+        read_only_fields = ["id", "email"]
+
+    def update(self, instance, validated_data):
+        locality_data = validated_data.pop("locality", None)
+        if locality_data is not None:
+            instance.locality = get_or_create_locality(locality_data)
+        return super().update(instance, validated_data)
+
+
+class FPOListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FpoProfile
+        fields = ["id", "fpo_name"]
