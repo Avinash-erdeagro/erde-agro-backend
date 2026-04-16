@@ -1,0 +1,11 @@
+services:
+  web:
+    image: ${DOCKER_IMAGE}
+    container_name: farmapp-backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./config/firebase-service-account.json:/app/config/firebase-service-account.json:ro

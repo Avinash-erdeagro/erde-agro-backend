@@ -11,4 +11,5 @@ whitenoise
 requests
 firebase-admin
 djangorestframework-simplejwt
+gunicorn
 Pillow
