@@ -150,20 +150,20 @@ A key pair lets you securely connect to your EC2 instance from your terminal.
 2. In the left sidebar, find **Network & Security** → click **Key Pairs**
 3. Click **Create key pair**
 4. Fill in:
-   - **Name:** `farmapp-key`
+   - **Name:** `erde-agro-farmapp-backend`
    - **Key pair type:** RSA
    - **Private key file format:** `.pem` (works on macOS/Linux)
 5. Click **Create key pair**
-6. A file called `farmapp-key.pem` will automatically download to your Mac
+6. A file called `erde-agro-farmapp-backend.pem` will automatically download to your Mac
 
 Now **secure the key file** — this is critically important:
 
 ```bash
 # Move the key to a safe location
-mv ~/Downloads/farmapp-key.pem ~/.ssh/farmapp-key.pem
+mv ~/Downloads/erde-agro-farmapp-backend.pem ~/.ssh/erde-agro-farmapp-backend.pem
 
 # Set correct permissions (SSH refuses to use keys that are too open)
-chmod 400 ~/.ssh/farmapp-key.pem
+chmod 400 ~/.ssh/erde-agro-farmapp-backend.pem
 ```
 
 > **WARNING:** If you lose this `.pem` file, you will be locked out of your server. Back it up securely. Never share it, never commit it to git.
@@ -182,7 +182,7 @@ Security Groups act as firewalls. We need two:
 1. Go to **EC2** → left sidebar **Network & Security** → **Security Groups**
 2. Click **Create security group**
 3. Fill in:
-   - **Security group name:** `farmapp-ec2-sg`
+   - **Security group name:** `farmapp-backend-ec2-sg`
    - **Description:** `Allow SSH, HTTP, HTTPS for FarmApp backend`
    - **VPC:** Leave as default VPC
 4. Under **Inbound rules**, click **Add rule** three times:
@@ -207,11 +207,11 @@ Security Groups act as firewalls. We need two:
    - **VPC:** Same default VPC
 3. Under **Inbound rules**, click **Add rule**:
 
-   | Type       | Protocol | Port Range | Source           | Description             |
-   | ---------- | -------- | ---------- | ---------------- | ----------------------- |
-   | PostgreSQL | TCP      | 5432       | `farmapp-ec2-sg` | DB access from EC2 only |
+   | Type       | Protocol | Port Range | Source                   | Description             |
+   | ---------- | -------- | ---------- | ------------------------ | ----------------------- |
+   | PostgreSQL | TCP      | 5432       | `farmapp-backend-ec2-sg` | DB access from EC2 only |
 
-   > **Important:** In the "Source" field, start typing `farmapp-ec2-sg` — it will appear as a dropdown option. Select it. This means ONLY machines in the EC2 security group can reach the database. The database is invisible to the public internet.
+   > **Important:** In the "Source" field, start typing `farmapp-backend-ec2-sg` — it will appear as a dropdown option. Select it. This means ONLY machines in the EC2 security group can reach the database. The database is invisible to the public internet.
 
 4. Click **Create security group**
 
@@ -235,14 +235,14 @@ This is the virtual server where Docker and Caddy will run.
    - `t3.micro` (free tier) works too if you want to save money initially, but may be tight under load
 
 5. **Key pair:**
-   - Select `farmapp-key` (the one we created in Step 1)
+   - Select `erde-agro-farmapp-backend` (the one we created in Step 1)
 
 6. **Network settings:** Click **Edit**
    - **VPC:** Default VPC
    - **Subnet:** No preference (any availability zone)
    - **Auto-assign public IP:** **Enable**
    - **Firewall (security groups):** Select **Select existing security group**
-   - Choose `farmapp-ec2-sg`
+   - Choose `farmapp-backend-ec2-sg`
 
 7. **Configure storage:**
    - Change from 8 GB to **25 GB** (gp3)
@@ -263,7 +263,7 @@ So your server has a permanent IP address:
 3. Select the new Elastic IP → click **Actions** → **Associate Elastic IP address**
 4. Choose your `farmapp-backend-server` instance → click **Associate**
 
-> **Write down this Elastic IP.** (e.g., `54.123.45.67`). You'll use it everywhere.
+> **Write down this Elastic IP.** (`13.202.58.233`). You'll use it everywhere.
 
 ---
 
@@ -272,15 +272,15 @@ So your server has a permanent IP address:
 Open Terminal on your Mac and run:
 
 ```bash
-ssh -i ~/.ssh/farmapp-key.pem ubuntu@YOUR_ELASTIC_IP
+ssh -i ~/.ssh/erde-agro-farmapp-backend.pem ubuntu@YOUR_ELASTIC_IP
 ```
 
-Replace `YOUR_ELASTIC_IP` with the actual IP from Step 3 (e.g., `54.123.45.67`).
+Replace `YOUR_ELASTIC_IP` with the actual IP from Step 3 (e.g., `13.202.58.233`).
 
 **First time connecting?** You'll see:
 
 ```
-The authenticity of host '54.123.45.67' can't be established.
+The authenticity of host '13.202.58.233' can't be established.
 Are you sure you want to continue connecting (yes/no)?
 ```
 
@@ -399,7 +399,7 @@ You should see something like `3.5 USE_GEOS=1 USE_PROJ=1 USE_STATS=1`. PostGIS i
 > **Troubleshooting: "Connection timed out"**
 >
 > - Check that both EC2 and RDS are in the same VPC
-> - Check that `farmapp-rds-sg` allows port 5432 from `farmapp-ec2-sg`
+> - Check that `farmapp-rds-sg` allows port 5432 from `farmapp-backend-ec2-sg`
 > - Check that RDS has "Public access: No" (and not "Yes")
 
 ---
@@ -631,7 +631,7 @@ DB_PORT=5432               ← Default PostgreSQL port
 From your **local terminal** (not SSH):
 
 ```bash
-scp -i ~/.ssh/farmapp-key.pem \
+scp -i ~/.ssh/erde-agro-farmapp-backend.pem \
   /path/to/your/firebase-service-account.json \
   ubuntu@YOUR_ELASTIC_IP:/home/ubuntu/erde-agro-farmapp-backend/config/firebase-service-account.json
 ```
@@ -655,7 +655,7 @@ chmod 600 /home/ubuntu/erde-agro-farmapp-backend/config/firebase-service-account
 From your **local terminal**, copy the production compose file to the server:
 
 ```bash
-scp -i ~/.ssh/farmapp-key.pem \
+scp -i ~/.ssh/erde-agro-farmapp-backend.pem \
   docker-compose.prod.yml \
   ubuntu@YOUR_ELASTIC_IP:/home/ubuntu/erde-agro-farmapp-backend/docker-compose.prod.yml
 ```
@@ -743,7 +743,7 @@ For HTTPS to work, your domain must point to your EC2's Elastic IP.
 2. Add an **A record**:
    - **Name / Host:** `api` (or whatever subdomain you chose, e.g., `farmapp-api`)
    - **Type:** A
-   - **Value / Points to:** Your Elastic IP (e.g., `54.123.45.67`)
+   - **Value / Points to:** Your Elastic IP (e.g., `13.202.58.233`)
    - **TTL:** 300 (or "Automatic")
 
 3. Wait for DNS propagation (can take 5 minutes to a few hours)
@@ -760,17 +760,17 @@ Go to your GitHub repo → **Settings** → **Secrets and variables** → **Acti
 
 Add these 4 secrets:
 
-| Secret Name           | Value                                          | Where It Comes From |
-| --------------------- | ---------------------------------------------- | ------------------- |
-| `DOCKER_HUB_USERNAME` | Your Docker Hub username (e.g., `yourcompany`) | Step 8              |
-| `DOCKER_HUB_TOKEN`    | Your Docker Hub access token                   | Step 8              |
-| `EC2_HOST`            | Your Elastic IP (e.g., `54.123.45.67`)         | Step 3              |
-| `EC2_SSH_KEY`         | The **entire contents** of `farmapp-key.pem`   | Step 1              |
+| Secret Name           | Value                                                      | Where It Comes From |
+| --------------------- | ---------------------------------------------------------- | ------------------- |
+| `DOCKER_HUB_USERNAME` | Your Docker Hub username (e.g., `yourcompany`)             | Step 8              |
+| `DOCKER_HUB_TOKEN`    | Your Docker Hub access token                               | Step 8              |
+| `EC2_HOST`            | Your Elastic IP (e.g., `13.202.58.233`)                    | Step 3              |
+| `EC2_SSH_KEY`         | The **entire contents** of `erde-agro-farmapp-backend.pem` | Step 1              |
 
 For `EC2_SSH_KEY`, on your Mac run:
 
 ```bash
-cat ~/.ssh/farmapp-key.pem
+cat ~/.ssh/erde-agro-farmapp-backend.pem
 ```
 
 Copy the **entire output** (including `-----BEGIN RSA PRIVATE KEY-----` and `-----END RSA PRIVATE KEY-----`) and paste it as the secret value.
@@ -939,7 +939,7 @@ sudo ufw status
 - [ ] **DEBUG is False** — `.env` has `DEBUG=False`
 - [ ] **.env is NOT in the git repo** — it lives only on the server
 - [ ] **firebase-service-account.json is NOT in the git repo** — it lives only on the server
-- [ ] **.pem file permissions are 400** — `chmod 400 ~/.ssh/farmapp-key.pem`
+- [ ] **.pem file permissions are 400** — `chmod 400 ~/.ssh/erde-agro-farmapp-backend.pem`
 - [ ] **firebase-service-account.json permissions are 600** — `chmod 600 config/firebase-service-account.json`
 - [ ] **Docker container binds to 127.0.0.1** — not 0.0.0.0 (only Caddy faces the internet)
 - [ ] **UFW firewall is enabled** — only ports 22, 80, 443 open
@@ -1127,7 +1127,7 @@ Total: ~2-3 minutes from push to live
 SSH into EC2, edit `.env`, and restart the container:
 
 ```bash
-ssh -i ~/.ssh/farmapp-key.pem ubuntu@YOUR_ELASTIC_IP
+ssh -i ~/.ssh/erde-agro-farmapp-backend.pem ubuntu@YOUR_ELASTIC_IP
 cd /home/ubuntu/erde-agro-farmapp-backend
 nano .env
 # Make your changes, save and exit
@@ -1137,12 +1137,12 @@ docker compose -f docker-compose.prod.yml up -d
 ### What if you need to update the Firebase key?
 
 ```bash
-scp -i ~/.ssh/farmapp-key.pem \
+scp -i ~/.ssh/erde-agro-farmapp-backend.pem \
   /path/to/new/firebase-service-account.json \
   ubuntu@YOUR_ELASTIC_IP:/home/ubuntu/erde-agro-farmapp-backend/config/firebase-service-account.json
 
 # Then restart the container
-ssh -i ~/.ssh/farmapp-key.pem ubuntu@YOUR_ELASTIC_IP
+ssh -i ~/.ssh/erde-agro-farmapp-backend.pem ubuntu@YOUR_ELASTIC_IP
 cd /home/ubuntu/erde-agro-farmapp-backend
 docker compose -f docker-compose.prod.yml restart
 ```
@@ -1245,7 +1245,7 @@ If that fails, check `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_STOR
 ### Can't SSH after IP change
 
 **Cause:** Your home IP changed, and SSH is restricted to the old IP.
-**Fix:** Go to EC2 → Security Groups → `farmapp-ec2-sg` → Edit inbound rules → Update the SSH source to your new IP (select "My IP").
+**Fix:** Go to EC2 → Security Groups → `farmapp-backend-ec2-sg` → Edit inbound rules → Update the SSH source to your new IP (select "My IP").
 
 ### Database migration errors
 
@@ -1301,7 +1301,7 @@ Here's approximately what this setup costs per month (USD), assuming the `ap-sou
 ## Quick Reference Card
 
 ```
-SSH into server:       ssh -i ~/.ssh/farmapp-key.pem ubuntu@YOUR_ELASTIC_IP
+SSH into server:       ssh -i ~/.ssh/erde-agro-farmapp-backend.pem ubuntu@YOUR_ELASTIC_IP
 
 Deploy (automated):    git push origin main
 Deploy (manual):       cd ~/erde-agro-farmapp-backend && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
