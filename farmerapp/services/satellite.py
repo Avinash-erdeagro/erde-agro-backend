@@ -221,6 +221,45 @@ def fetch_farm_events_by_external_ids(*, observation_date: str, external_ids: li
     return data
 
 
+def fetch_farm_charts(*, external_id: int, observation_date: str):
+    token = _build_internal_auth_token()
+    url = f"{settings.SATELLITE_SERVICE_BASE_URL}/internal/farm-charts"
+
+    try:
+        response = requests.get(
+            url,
+            params={
+                "external_id": external_id,
+                "observation_date": observation_date,
+            },
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=settings.SATELLITE_SERVICE_TIMEOUT,
+        )
+    except requests.RequestException as exc:
+        raise SatelliteServiceError(
+            "Failed to connect to satellite service."
+        ) from exc
+
+    try:
+        data = response.json()
+    except ValueError:
+        data = None
+
+    if response.status_code == 404:
+        raise SatelliteServiceError("Farm charts not found for this farm and date.")
+
+    if response.status_code >= 400:
+        message = None
+        if isinstance(data, dict):
+            message = data.get("detail") or data.get("message") or data.get("error")
+        raise SatelliteServiceError(message or "Failed to fetch farm charts.")
+
+    if data is None:
+        raise SatelliteServiceError("Invalid response from satellite service.")
+
+    return data
+
+
 def fetch_farm_map_layers_by_external_ids(*, observation_date: str, external_ids: list[int]):
     if not external_ids:
         return {

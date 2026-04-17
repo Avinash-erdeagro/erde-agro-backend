@@ -1,5 +1,6 @@
 from .satellite import (
     SatelliteServiceError,
+    fetch_farm_charts,
     fetch_farm_events_by_external_ids,
     fetch_farm_insights,
     fetch_farm_map_layers_by_external_ids,
@@ -9,6 +10,7 @@ from .satellite import (
 
 __all__ = [
     "SatelliteServiceError",
+    "fetch_farm_charts",
     "fetch_farm_events_by_external_ids",
     "fetch_farm_insights",
     "fetch_farm_map_layers_by_external_ids",
