@@ -7,7 +7,12 @@ from .profiles import (
 )
 from .registration import UserRegistrationView
 from .pincode import PincodeLookupView
-from .authentication import FarmerFirebaseLoginView, FPOLoginView, TokenRefreshApiView
+from .authentication import (
+    FarmerFirebaseLoginView,
+    FarmerOTPCheckView,
+    FPOLoginView,
+    TokenRefreshApiView,
+)
 
 __all__ = [
     "FarmerMyProfileView",
@@ -18,6 +23,7 @@ __all__ = [
     "UserRegistrationView",
     "PincodeLookupView",
     "FarmerFirebaseLoginView",
+    "FarmerOTPCheckView",
     "FPOLoginView",
     "TokenRefreshApiView",
 ]

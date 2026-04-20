@@ -8,7 +8,11 @@ from .profiles import (
 )
 from .registration import UserRegistrationSerializer
 from .pincode import PincodeLookupResultSerializer
-from .authentication import FarmerFirebaseLoginSerializer, FPOLoginSerializer
+from .authentication import (
+    FarmerFirebaseLoginSerializer,
+    FarmerOTPCheckSerializer,
+    FPOLoginSerializer,
+)
 
 __all__ = [
     "LocalitySerializer",
@@ -21,5 +25,6 @@ __all__ = [
     "UserRegistrationSerializer",
     "PincodeLookupResultSerializer",
     "FarmerFirebaseLoginSerializer",
+    "FarmerOTPCheckSerializer",
     "FPOLoginSerializer",
 ]

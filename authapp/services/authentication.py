@@ -76,3 +76,23 @@ def login_fpo(username: str, password: str):
         "user_name": fpo_profile.fpo_name,
         "role": app_user.role,
     }
+
+
+def check_farmer_otp_eligibility(phone_number: str):
+    try:
+        normalized_phone = normalize_indian_phone_number(phone_number)
+    except ValueError as exc:
+        raise AuthenticationError(str(exc)) from exc
+
+    farmer = FarmerProfile.objects.select_related("app_user").filter(
+        contact_number=normalized_phone,
+        app_user__role=AppUser.Role.FARMER,
+    ).first()
+
+    should_send_otp = farmer is not None
+
+    return {
+        "phone_number": normalized_phone,
+        "is_farmer_registered": should_send_otp,
+        "should_send_otp": should_send_otp,
+    }
