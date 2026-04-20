@@ -1,8 +1,17 @@
 from rest_framework import status
 
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
-from authapp.api.serializers import FarmerFirebaseLoginSerializer, FPOLoginSerializer
-from authapp.services import AuthenticationError, login_farmer_with_firebase, login_fpo
+from authapp.api.serializers import (
+    FarmerFirebaseLoginSerializer,
+    FarmerOTPCheckSerializer,
+    FPOLoginSerializer,
+)
+from authapp.services import (
+    AuthenticationError,
+    check_farmer_otp_eligibility,
+    login_farmer_with_firebase,
+    login_fpo,
+)
 
 from ..responses import api_response
 from .base import BaseAPIView
@@ -65,6 +74,40 @@ class FPOLoginView(BaseAPIView):
             result=result,
             status_code=status.HTTP_200_OK,
         )
+
+
+class FarmerOTPCheckView(BaseAPIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        serializer = FarmerOTPCheckSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            result = check_farmer_otp_eligibility(
+                serializer.validated_data["phone_number"]
+            )
+        except AuthenticationError as exc:
+            return api_response(
+                success=False,
+                message=str(exc),
+                result=None,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if result["should_send_otp"]:
+            message = "Farmer found. OTP can be sent."
+        else:
+            message = "Farmer account not found for this phone number."
+
+        return api_response(
+            success=True,
+            message=message,
+            result=result,
+            status_code=status.HTTP_200_OK,
+        )
+
 
 class TokenRefreshApiView(BaseAPIView):
     authentication_classes = []

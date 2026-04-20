@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     FarmerFirebaseLoginView,
+    FarmerOTPCheckView,
     FarmerMyProfileView,
     FarmerProfileViewSet,
     FPOListView,
@@ -21,6 +22,7 @@ router.register("farmer-profiles", FarmerProfileViewSet, basename="farmer-profil
 urlpatterns = [
     path("register/", UserRegistrationView.as_view(), name="register"),
     path("pincode/<str:pin_code>/", PincodeLookupView.as_view(), name="pincode-lookup"),
+    path("farmer/check-otp/", FarmerOTPCheckView.as_view(), name="farmer-check-otp"),
     path("firebase-login/", FarmerFirebaseLoginView.as_view(), name="farmer-firebase-login"),
     path("fpo/login/", FPOLoginView.as_view(), name="fpo-login"),
     path("token/refresh/", TokenRefreshApiView.as_view(), name="token-refresh"),
