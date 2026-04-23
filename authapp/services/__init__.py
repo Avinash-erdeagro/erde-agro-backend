@@ -8,6 +8,7 @@ from .authentication import (
     check_farmer_otp_eligibility,
     login_farmer_with_firebase,
     login_fpo,
+    login_webapp
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "check_farmer_otp_eligibility",
     "login_farmer_with_firebase",
     "login_fpo",
+    login_webapp,
 ]

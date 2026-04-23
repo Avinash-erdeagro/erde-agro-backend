@@ -96,3 +96,23 @@ def check_farmer_otp_eligibility(phone_number: str):
         "is_farmer_registered": should_send_otp,
         "should_send_otp": should_send_otp,
     }
+
+
+def login_webapp(username: str, password: str):
+    user = authenticate(username=username.strip(), password=password)
+
+    if not user:
+        raise AuthenticationError("Invalid username or password.")
+
+    app_user = AppUser.objects.filter(user=user).first()
+    if not app_user:
+        raise AuthenticationError("User account not found.")
+
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        "access_token": str(refresh.access_token),
+        "refresh_token": str(refresh),
+        "user_name": user.username,
+        "role": getattr(app_user, "role", None),
+    }
