@@ -10,6 +10,8 @@ from fpoapp.api.serializers import (
     FPOFarmerListSerializer,
 )
 from fpoapp.services import create_farmer_under_fpo
+from farmerapp.models import Farm, FarmCrop
+from django.db.models import Count
 
 # TODO this needs to be removed
 class FPOBaseAPIView(BaseAPIView):
@@ -74,6 +76,59 @@ class FPOFarmerListCreateView(FPOBaseAPIView):
             message="Farmer created successfully under the FPO.",
             result=response_serializer.data,
             status_code=status.HTTP_201_CREATED,
+        )
+
+# Filter States endpoint for farmers registered under the FPO
+class FPOFarmerFilterStateView(FPOBaseAPIView):
+    def get(self, request):
+        fpo_profile = self.ensure_fpo_profile()
+        if not isinstance(fpo_profile, FpoProfile):
+            return fpo_profile
+
+        states = (
+            FarmerProfile.objects
+            .filter(
+                registered_with_fpo=fpo_profile,
+                locality__state__isnull=False
+            )
+            .exclude(locality__state="")
+            .values("locality__state")
+            .annotate(farmers_count=Count("id"))
+            .order_by("locality__state")
+        )
+
+        return api_response(
+            success=True,
+            message="List of states with farmer counts.",
+            result={"states": list(states)},
+            status_code=status.HTTP_200_OK,
+        )
+
+# Filter Districts for a given state for farmers registered under the FPO
+class FPOFarmerDistrictListView(FPOBaseAPIView):
+    def get(self, request, state):
+        fpo_profile = self.ensure_fpo_profile()
+        if not isinstance(fpo_profile, FpoProfile):
+            return fpo_profile
+
+        districts = (
+            FarmerProfile.objects
+            .filter(
+                registered_with_fpo=fpo_profile,
+                locality__state__iexact=state,  
+                locality__district__isnull=False
+            )
+            .exclude(locality__district="")
+            .values("locality__district")
+            .annotate(farmers_count=Count("id"))
+            .order_by("locality__district")
+        )
+
+        return api_response(
+            success=True,
+            message=f"List of districts in state '{state}'.",
+            result={"districts": list(districts)},
+            status_code=status.HTTP_200_OK,
         )
 
 
