@@ -10,8 +10,8 @@ from fpoapp.api.serializers import (
     FPOFarmerListSerializer,
 )
 from fpoapp.services import create_farmer_under_fpo
-from farmerapp.models import Farm, FarmCrop
-from django.db.models import Count
+from farmerapp.models import FarmCrop
+from django.db.models import Count, Prefetch
 
 class FPOBaseAPIView(BaseAPIView):
     permission_classes = [IsAuthenticated]
@@ -185,5 +185,63 @@ class FPOFarmerListByDistrictView(FPOBaseAPIView):
             success=True,
             message=f"Farmers in district '{district}', state '{state}'.",
             result={"farmers": farmer_list},
+            status_code=status.HTTP_200_OK,
+        )
+    
+# Farms for a given farmer_id
+class FPOFarmerFarmsListView(FPOBaseAPIView):
+    def get(self, request, farmer_id):
+        fpo_profile = self.ensure_fpo_profile()
+        if not isinstance(fpo_profile, FpoProfile):
+            return fpo_profile
+
+        try:
+            farmer = FarmerProfile.objects.select_related("app_user").get(
+                id=farmer_id,
+                registered_with_fpo=fpo_profile
+            )
+        except FarmerProfile.DoesNotExist:
+            return api_response(
+                success=False,
+                message="Farmer not found or not registered under this FPO.",
+                result=None,
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+        farms = (
+            farmer.app_user.farms
+            .all()
+            .prefetch_related(
+                Prefetch(
+                    "crops",
+                    queryset=FarmCrop.objects.filter(is_active=True).order_by("-plantation_date"),
+                    to_attr="active_crops"
+                )
+            )
+        )
+
+        farm_list = []
+
+        for farm in farms:
+            active_crop = None
+            plantation_date = None
+
+            if hasattr(farm, "active_crops") and farm.active_crops:
+                active = farm.active_crops[0]
+                active_crop = active.primary_crop_name
+                plantation_date = active.plantation_date
+
+            farm_list.append({
+                "id": farm.id,
+                "name": farm.farm_name,
+                "area": farm.area,
+                "active_crop": active_crop,
+                "plantation_date": plantation_date,
+            })
+
+        return api_response(
+            success=True,
+            message=f"Farms for farmer id {farmer_id}.",
+            result={"farms": farm_list},
             status_code=status.HTTP_200_OK,
         )

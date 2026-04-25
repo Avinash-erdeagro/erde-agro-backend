@@ -8,6 +8,7 @@ from .views import (
     FPOFarmerFilterStateView,
     FPOFarmerDistrictListView,
     FPOFarmerListByDistrictView,
+    FPOFarmerFarmsListView,
 )
 
 urlpatterns = [
@@ -41,5 +42,10 @@ urlpatterns = [
         "farmers/states/<str:state>/districts/<str:district>/farmers/",
         FPOFarmerListByDistrictView.as_view(),
         name="fpo-farmer-list-by-district",
+    ),
+    path(
+        "farmers/<int:farmer_id>/farms/",
+        FPOFarmerFarmsListView.as_view(),
+        name="fpo-farmer-farms-list",
     ),
 ]
