@@ -13,7 +13,6 @@ from fpoapp.services import create_farmer_under_fpo
 from farmerapp.models import Farm, FarmCrop
 from django.db.models import Count
 
-# TODO this needs to be removed
 class FPOBaseAPIView(BaseAPIView):
     permission_classes = [IsAuthenticated]
 
@@ -78,6 +77,25 @@ class FPOFarmerListCreateView(FPOBaseAPIView):
             status_code=status.HTTP_201_CREATED,
         )
 
+
+class FPOFarmerContactListView(FPOBaseAPIView):
+    def get(self, request):
+        fpo_profile = self.ensure_fpo_profile()
+        if not isinstance(fpo_profile, FpoProfile):
+            return fpo_profile
+
+        farmers = FarmerProfile.objects.filter(
+            registered_with_fpo=fpo_profile
+        ).only("farmer_name", "contact_number")
+
+        serializer = FPOFarmerContactListSerializer(farmers, many=True)
+        return api_response(
+            success=True,
+            message="FPO farmer contacts fetched successfully.",
+            result={"farmers": serializer.data},
+            status_code=status.HTTP_200_OK,
+        )
+
 # Filter States endpoint for farmers registered under the FPO
 class FPOFarmerFilterStateView(FPOBaseAPIView):
     def get(self, request):
@@ -131,21 +149,3 @@ class FPOFarmerDistrictListView(FPOBaseAPIView):
             status_code=status.HTTP_200_OK,
         )
 
-
-class FPOFarmerContactListView(FPOBaseAPIView):
-    def get(self, request):
-        fpo_profile = self.ensure_fpo_profile()
-        if not isinstance(fpo_profile, FpoProfile):
-            return fpo_profile
-
-        farmers = FarmerProfile.objects.filter(
-            registered_with_fpo=fpo_profile
-        ).only("farmer_name", "contact_number")
-
-        serializer = FPOFarmerContactListSerializer(farmers, many=True)
-        return api_response(
-            success=True,
-            message="FPO farmer contacts fetched successfully.",
-            result={"farmers": serializer.data},
-            status_code=status.HTTP_200_OK,
-        )
