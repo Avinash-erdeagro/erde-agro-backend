@@ -149,3 +149,41 @@ class FPOFarmerDistrictListView(FPOBaseAPIView):
             status_code=status.HTTP_200_OK,
         )
 
+
+class FPOFarmerListByDistrictView(FPOBaseAPIView):
+    def get(self, request, state, district):
+        fpo_profile = self.ensure_fpo_profile()
+        if not isinstance(fpo_profile, FpoProfile):
+            return fpo_profile
+
+        farmers = (
+            FarmerProfile.objects
+            .filter(
+                registered_with_fpo=fpo_profile,
+                locality__state__iexact=state,
+                locality__district__iexact=district,
+            )
+            .annotate(farms_count=Count("app_user__farms"))
+            .values(
+                "id",
+                "farmer_name",
+                "farms_count"
+            )
+            .order_by("farmer_name")
+        )
+
+        farmer_list = [
+            {
+                "id": f["id"],
+                "name": f["farmer_name"],
+                "farms_count": f["farms_count"],
+            }
+            for f in farmers
+        ]
+
+        return api_response(
+            success=True,
+            message=f"Farmers in district '{district}', state '{state}'.",
+            result={"farmers": farmer_list},
+            status_code=status.HTTP_200_OK,
+        )

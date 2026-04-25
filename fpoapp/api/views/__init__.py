@@ -2,7 +2,8 @@ from .farmers import (
     FPOFarmerContactListView,
     FPOFarmerListCreateView,
     FPOFarmerDistrictListView,
-    FPOFarmerFilterStateView
+    FPOFarmerFilterStateView,
+    FPOFarmerListByDistrictView,
 )
 from .satellite import FPOSatelliteMapLayersView, FPOSatelliteOverviewView
 
@@ -13,4 +14,5 @@ __all__ = [
     "FPOSatelliteMapLayersView",
     "FPOFarmerFilterStateView",
     "FPOFarmerDistrictListView",
+    "FPOFarmerListByDistrictView",
 ]
