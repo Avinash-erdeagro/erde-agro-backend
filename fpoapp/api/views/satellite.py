@@ -340,8 +340,20 @@ class FPOOverviewAPIView(BaseAPIView):
         except ValueError:
             return api_response(False, "Invalid observation_date format. Use YYYY-MM-DD", None, 400)
 
-        # Get all farms under this FPO
+
+        # Optional filters
+        state = request.query_params.get("state")
+        district = request.query_params.get("district")
+        farmer_id = request.query_params.get("farmer")
+
         farms = Farm.objects.filter(farmer__farmer_profile__registered_with_fpo=fpo_profile)
+        if state:
+            farms = farms.filter(farmer__farmer_profile__locality__state__iexact=state)
+        if district:
+            farms = farms.filter(farmer__farmer_profile__locality__district__iexact=district)
+        if farmer_id:
+            farms = farms.filter(farmer__farmer_profile__id=farmer_id)
+
         total_area = farms.aggregate(total_area=Sum("area"))['total_area'] or 0.0
 
         # Crop-wise area
