@@ -1298,7 +1298,7 @@ Here's approximately what this setup costs per month (USD), assuming the `ap-sou
 
 ---
 
-## Quick Reference Card
+## Quick Reference Card Guide
 
 ```
 SSH into server:       ssh -i ~/.ssh/erde-agro-farmapp-backend.pem ubuntu@YOUR_ELASTIC_IP
