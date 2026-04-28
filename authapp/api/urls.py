@@ -12,7 +12,8 @@ from .views import (
     FPOProfileViewSet,
     PincodeLookupView,
     UserRegistrationView,
-    TokenRefreshApiView
+    TokenRefreshApiView,
+    WebAppLoginView,
 )
 
 router = DefaultRouter()
@@ -25,6 +26,7 @@ urlpatterns = [
     path("farmer/check-otp/", FarmerOTPCheckView.as_view(), name="farmer-check-otp"),
     path("firebase-login/", FarmerFirebaseLoginView.as_view(), name="farmer-firebase-login"),
     path("fpo/login/", FPOLoginView.as_view(), name="fpo-login"),
+    path("webapp/login/", WebAppLoginView.as_view(), name="webapp-login"),
     path("token/refresh/", TokenRefreshApiView.as_view(), name="token-refresh"),
     path("farmer/my-profile/", FarmerMyProfileView.as_view(), name="farmer-my-profile"),
     path("fpo/my-profile/", FPOMyProfileView.as_view(), name="fpo-my-profile"),

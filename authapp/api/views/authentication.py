@@ -5,12 +5,14 @@ from authapp.api.serializers import (
     FarmerFirebaseLoginSerializer,
     FarmerOTPCheckSerializer,
     FPOLoginSerializer,
+    WebAppLoginSerializer,
 )
 from authapp.services import (
     AuthenticationError,
     check_farmer_otp_eligibility,
     login_farmer_with_firebase,
     login_fpo,
+    login_webapp,
 )
 
 from ..responses import api_response
@@ -131,6 +133,37 @@ class TokenRefreshApiView(BaseAPIView):
 
         if "refresh" in serializer.validated_data:
             result["refresh_token"] = serializer.validated_data["refresh"]
+
+        return api_response(
+            success=True,
+            message=self.success_message,
+            result=result,
+            status_code=status.HTTP_200_OK,
+        )
+
+
+# WebApp Login API
+class WebAppLoginView(BaseAPIView):
+    authentication_classes = []
+    permission_classes = []
+    success_message = "WebApp login successful."
+
+    def post(self, request):
+        serializer = WebAppLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            result = login_webapp(
+                username=serializer.validated_data["username"],
+                password=serializer.validated_data["password"],
+            )
+        except AuthenticationError as exc:
+            return api_response(
+                success=False,
+                message=str(exc),
+                result=None,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
 
         return api_response(
             success=True,

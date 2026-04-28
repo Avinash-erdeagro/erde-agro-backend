@@ -12,6 +12,7 @@ from .authentication import (
     FarmerOTPCheckView,
     FPOLoginView,
     TokenRefreshApiView,
+    WebAppLoginView,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "FarmerOTPCheckView",
     "FPOLoginView",
     "TokenRefreshApiView",
+    "WebAppLoginView",
 ]
