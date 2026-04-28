@@ -12,6 +12,7 @@ from .authentication import (
     FarmerFirebaseLoginSerializer,
     FarmerOTPCheckSerializer,
     FPOLoginSerializer,
+    WebAppLoginSerializer,
 )
 
 __all__ = [
@@ -27,4 +28,5 @@ __all__ = [
     "FarmerFirebaseLoginSerializer",
     "FarmerOTPCheckSerializer",
     "FPOLoginSerializer",
+    "WebAppLoginSerializer",
 ]

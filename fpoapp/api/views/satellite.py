@@ -1,3 +1,9 @@
+from django.db.models import Sum, Q, Count
+from satelliteapp.models import SatelliteFarmAlert
+from farmerapp.models import Farm, FarmCrop
+from authapp.models import FpoProfile
+from datetime import datetime, timedelta
+
 from collections import defaultdict
 
 from django.db.models import OuterRef, Prefetch, Subquery
@@ -305,4 +311,98 @@ class FPOSatelliteMapLayersView(BaseAPIView):
                 "farmers": farmers,
             },
             status_code=status.HTTP_200_OK,
+        )
+
+# --- FPO Overview API ---
+class FPOOverviewAPIView(BaseAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        app_user = request.user.appuser
+        if app_user.role != AppUser.Role.FPO:
+            return api_response(
+                success=False,
+                message="This API is available only for FPO users.",
+                result=None,
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        fpo_profile = getattr(app_user, "fpo_profile", None)
+        if not fpo_profile:
+            return api_response(False, "No FPO profile found.", None, 403)
+
+        observation_date = request.query_params.get("observation_date")
+        if not observation_date:
+            return api_response(False, "observation_date is required (YYYY-MM-DD)", None, 400)
+        try:
+            parsed_date = datetime.strptime(observation_date, "%Y-%m-%d").date()
+            observation_date = parsed_date - timedelta(days=1)
+        except ValueError:
+            return api_response(False, "Invalid observation_date format. Use YYYY-MM-DD", None, 400)
+
+
+        # Optional filters
+        state = request.query_params.get("state")
+        district = request.query_params.get("district")
+        farmer_id = request.query_params.get("farmer")
+
+        farms = Farm.objects.filter(farmer__farmer_profile__registered_with_fpo=fpo_profile)
+        if state:
+            farms = farms.filter(farmer__farmer_profile__locality__state__iexact=state)
+        if district:
+            farms = farms.filter(farmer__farmer_profile__locality__district__iexact=district)
+        if farmer_id:
+            farms = farms.filter(farmer__farmer_profile__id=farmer_id)
+
+        total_area = farms.aggregate(total_area=Sum("area"))['total_area'] or 0.0
+
+        # Crop-wise area
+        crop_areas = (
+            FarmCrop.objects.filter(
+                farm__in=farms,
+                is_active=True
+            )
+            .values("primary_crop__name", "custom_primary_crop_name")
+            .annotate(total_area=Sum("farm__area"), farms_count=Count("farm", distinct=True))
+            .order_by("primary_crop__name")
+        )
+
+        # Alert counts
+        moisture_alert_types = [
+            "CRITICAL_WATER_STRESS",
+            "OVERWATERING_DETECTED",
+            "RAIN_ALERT_SKIP_IRRIGATION",
+        ]
+        crop_growth_alert_types = ["CROP_HEALTH_DROPPING"]
+
+        alerts_qs = SatelliteFarmAlert.objects.filter(
+            farm__in=farms,
+            observation_date=observation_date
+        )
+
+        moisture_alerts_count = alerts_qs.filter(alert_type__in=moisture_alert_types).count()
+        crop_growth_alerts_count = alerts_qs.filter(alert_type__in=crop_growth_alert_types).count()
+        total_alerts_count = alerts_qs.count()
+
+        return api_response(
+            success=True,
+            message="FPO Overview fetched successfully.",
+            result={
+                "observation_date": observation_date,
+                "total_area": round(total_area, 2),
+                "crops": [
+                    {
+                        "crop_name": c["primary_crop__name"] or c["custom_primary_crop_name"],
+                        "total_area": round(c["total_area"] or 0, 2),
+                        "farms_count": c["farms_count"]
+                    }
+                    for c in crop_areas
+                ],
+                "alerts": {
+                    "total": total_alerts_count,
+                    "moisture_status": moisture_alerts_count,
+                    "crop_growth": crop_growth_alerts_count,
+                },
+            },
+            status_code=200,
         )

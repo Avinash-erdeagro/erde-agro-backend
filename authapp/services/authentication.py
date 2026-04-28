@@ -1,7 +1,7 @@
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from authapp.models import AppUser, FarmerProfile
+from authapp.models import AppUser, FarmerProfile, FpoProfile
 from authapp.services.firebase import verify_firebase_id_token
 from authapp.services.phone import normalize_indian_phone_number
 
@@ -95,4 +95,35 @@ def check_farmer_otp_eligibility(phone_number: str):
         "phone_number": normalized_phone,
         "is_farmer_registered": should_send_otp,
         "should_send_otp": should_send_otp,
+    }
+
+
+def login_webapp(username: str, password: str):
+    user = authenticate(username=username.strip(), password=password)
+
+    if not user:
+        raise AuthenticationError("Invalid username or password.")
+
+    app_user = AppUser.objects.filter(user=user).first()
+    if not app_user:
+        raise AuthenticationError("User account not found.")
+
+    # Determine display name based on role
+    display_name = user.username
+    if app_user.role == AppUser.Role.FARMER:
+        farmer_profile = FarmerProfile.objects.filter(app_user=app_user).first()
+        if farmer_profile:
+            display_name = farmer_profile.farmer_name
+    elif app_user.role == AppUser.Role.FPO:
+        fpo_profile = FpoProfile.objects.filter(app_user=app_user).first()
+        if fpo_profile:
+            display_name = fpo_profile.fpo_name
+
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        "access_token": str(refresh.access_token),
+        "refresh_token": str(refresh),
+        "user_name": display_name,
+        "role": getattr(app_user, "role", None),
     }

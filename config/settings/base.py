@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "farmerapp",
     "billingapp",
     "fpoapp",
+    "satelliteapp",
 ]
 
 MIDDLEWARE = [
@@ -148,3 +149,4 @@ SATELLITE_INTERNAL_AUTH_SHARED_SECRET = config(
 SATELLITE_INTERNAL_AUTH_ALGORITHM = config(
     "SATELLITE_INTERNAL_AUTH_ALGORITHM", default="HS256"
 )
+SATELLITE_EVENTS_SECRET = config("SATELLITE_EVENTS_SECRET", default="")

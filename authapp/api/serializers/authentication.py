@@ -12,6 +12,11 @@ class FPOLoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
 
+
+class WebAppLoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
 class FarmerOTPCheckSerializer(serializers.Serializer):
     phone_number = serializers.CharField()
 
