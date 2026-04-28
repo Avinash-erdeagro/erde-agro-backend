@@ -1328,3 +1328,5 @@ Clean disk:            docker system prune -f
 
 Rollback:              export DOCKER_IMAGE=yourcompany/farmapp-backend:COMMIT_SHA && cd ~/erde-agro-farmapp-backend && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
 ```
+
+updating
