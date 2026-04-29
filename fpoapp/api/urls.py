@@ -5,6 +5,7 @@ from .views import (
     FPOFarmerListCreateView,
     FPOSatelliteMapLayersView,
     FPOSatelliteOverviewView,
+    FPOSingleFarmSatelliteMapLayersView,
     FPOFarmerFilterStateView,
     FPOFarmerDistrictListView,
     FPOFarmerListByDistrictView,
@@ -22,6 +23,11 @@ urlpatterns = [
         "satellite-map-layers/",
         FPOSatelliteMapLayersView.as_view(),
         name="fpo-satellite-map-layers",
+    ),
+    path(
+        "farms/<int:farm_id>/satellite-map-layers/",
+        FPOSingleFarmSatelliteMapLayersView.as_view(),
+        name="fpo-single-farm-satellite-map-layers",
     ),
     path(
         "farmers/contact-list/",

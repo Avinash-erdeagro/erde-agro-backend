@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 
 from django.db.models import OuterRef, Prefetch, Subquery
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
@@ -309,6 +310,94 @@ class FPOSatelliteMapLayersView(BaseAPIView):
                 ),
                 "farmers_count": len(farmers),
                 "farmers": farmers,
+            },
+            status_code=status.HTTP_200_OK,
+        )
+
+
+class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self, fpo_profile):
+        latest_subscription_qs = FarmSatelliteSubscription.objects.filter(
+            farm_id=OuterRef("pk")
+        ).order_by("-created_at")
+
+        crop_queryset = FarmCrop.objects.select_related("primary_crop").order_by("-is_active")
+
+        return (
+            Farm.objects.filter(
+                farmer__farmer_profile__registered_with_fpo=fpo_profile
+            )
+            .select_related("farmer", "farmer__farmer_profile")
+            .annotate(
+                latest_subscription_status=Subquery(
+                    latest_subscription_qs.values("status")[:1]
+                )
+            )
+            .filter(latest_subscription_status=SatelliteSubscriptionStatus.SYNCING)
+            .only("id", "farm_name", "area", "farmer")
+            .prefetch_related(Prefetch("crops", queryset=crop_queryset))
+        )
+
+    def get(self, request, farm_id):
+        app_user = request.user.appuser
+
+        if app_user.role != AppUser.Role.FPO:
+            return api_response(
+                success=False,
+                message="This API is available only for FPO users.",
+                result=None,
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = FarmerSatelliteOverviewQuerySerializer(
+            data=request.query_params
+        )
+        serializer.is_valid(raise_exception=True)
+        observation_date = serializer.validated_data["observation_date"]
+
+        farm = get_object_or_404(self.get_queryset(app_user.fpo_profile), pk=farm_id)
+
+        try:
+            satellite_layers = fetch_farm_map_layers_by_external_ids(
+                observation_date=observation_date.isoformat(),
+                external_ids=[farm.id],
+            )
+        except SatelliteServiceError as exc:
+            return api_response(
+                success=False,
+                message=str(exc),
+                result=None,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        layers_by_farm_id = {
+            item["external_id"]: {
+                key: value
+                for key, value in item.items()
+                if key != "external_id"
+            }
+            for item in satellite_layers.get("results", [])
+            if isinstance(item, dict) and item.get("external_id") is not None
+        }
+
+        crop = next(iter(farm.crops.all()), None)
+        layers_result = layers_by_farm_id.get(farm.id, {})
+
+        return api_response(
+            success=True,
+            message="FPO farm map layers fetched successfully.",
+            result={
+                "farm_id": farm.id,
+                "farm_name": farm.farm_name,
+                "area": farm.area,
+                "crop_name": crop.primary_crop_name if crop else None,
+                "observation_date": layers_result.get(
+                    "observation_date",
+                    satellite_layers.get("observation_date", observation_date.isoformat()),
+                ),
+                "layers": layers_result.get("layers", []),
             },
             status_code=status.HTTP_200_OK,
         )
