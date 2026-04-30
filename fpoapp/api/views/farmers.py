@@ -48,7 +48,12 @@ class FPOFarmerListCreateView(FPOBaseAPIView):
             "app_user",
             "app_user__user",
             "locality",
-        ).prefetch_related("app_user__farms")
+        ).prefetch_related(
+            Prefetch(
+                "app_user__farms",
+                queryset=AppUser.farms.rel.related_model.objects.prefetch_related("crops")
+            )
+        )
 
         serializer = FPOFarmerListSerializer(farmers, many=True)
         return api_response(

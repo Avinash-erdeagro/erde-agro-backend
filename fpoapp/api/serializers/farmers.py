@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from farmerapp.api.serializers import FarmSerializer
 from authapp.api.serializers.locality import LocalitySerializer
 from authapp.models import AppUser, FarmerProfile
 from authapp.services import normalize_indian_phone_number
@@ -47,8 +48,24 @@ class FPOFarmerListSerializer(serializers.ModelSerializer):
         ]
 
     def get_farms(self, obj):
-        farms = obj.app_user.farms.all()
-        return FPOManagedFarmerFarmSummarySerializer(farms, many=True).data
+        farms = obj.app_user.farms.all().prefetch_related('crops')
+        farm_list = []
+        from farmerapp.api.serializers.farm import FarmSerializer
+        for farm in farms:
+            # Serialize all farm fields
+            farm_data = FarmSerializer(farm).data
+            # Find the active crop for this farm
+            active_crop = None
+            plantation_date = None
+            for crop in farm.crops.all():
+                if getattr(crop, 'is_active', False):
+                    active_crop = crop.primary_crop_name
+                    plantation_date = crop.plantation_date
+                    break
+            farm_data['active_crop'] = active_crop
+            farm_data['plantation_date'] = plantation_date
+            farm_list.append(farm_data)
+        return farm_list
 
 
 class FPOFarmerCreateSerializer(serializers.Serializer):
