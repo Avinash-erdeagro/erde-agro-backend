@@ -33,7 +33,10 @@ class SatelliteFarmNotificationAdmin(admin.ModelAdmin):
         "notification_type",
         "observation_date",
         "is_read",
+        "push_status",
         "created_at",
     )
-    search_fields = ("receipt__event_id", "farm__name", "notification_type")
+    list_filter = ("push_status", "notification_type")
+    search_fields = ("receipt__event_id", "farm__farm_name", "notification_type")
+    readonly_fields = ("push_failure_reason",)
     ordering = ("-created_at",)

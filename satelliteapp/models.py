@@ -52,6 +52,13 @@ class SatelliteFarmAlert(models.Model):
         ]
 
 
+class SatelliteFarmNotificationPushStatus(models.TextChoices):
+    PENDING = "PENDING", "Pending"
+    SENT = "SENT", "Sent"
+    FAILED = "FAILED", "Failed"
+    NO_DEVICES = "NO_DEVICES", "No Devices"
+
+
 class SatelliteFarmNotification(models.Model):
     receipt = models.ForeignKey(
         "satelliteapp.SatelliteEventReceipt",
@@ -69,6 +76,13 @@ class SatelliteFarmNotification(models.Model):
     event_created_at = models.DateTimeField(null=True, blank=True)
     observation_date = models.DateField()
     is_read = models.BooleanField(default=False)
+    push_status = models.CharField(
+        max_length=20,
+        choices=SatelliteFarmNotificationPushStatus.choices,
+        default=SatelliteFarmNotificationPushStatus.PENDING,
+        db_index=True,
+    )
+    push_failure_reason = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
