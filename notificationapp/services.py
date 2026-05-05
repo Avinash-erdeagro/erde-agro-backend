@@ -10,21 +10,38 @@ def send_push_notification(*, user, title: str, body: str, data: dict = None):
     """
     get_firebase_app()
 
-    tokens = list(
-        DeviceToken.objects.filter(user=user).values_list("token", "id")
-    )
+    tokens = list(DeviceToken.objects.filter(user=user).values_list("token", "id"))
     if not tokens:
         return []
+
+    payload_data = {k: str(v) for k, v in (data or {}).items()}
+    payload_data.setdefault("title", title)
+    payload_data.setdefault("body", body)
 
     results = []
     stale_ids = []
 
     for token, device_id in tokens:
         message = messaging.Message(
-            notification=messaging.Notification(title=title, body=body),
-            data={k: str(v) for k, v in (data or {}).items()},
             token=token,
+            notification=messaging.Notification(title=title, body=body),
+            data=payload_data,
+            android=messaging.AndroidConfig(
+                priority="high",
+                ttl=3600,  # 1 hour
+                notification=messaging.AndroidNotification(
+                    channel_id="general",  # must match app channel id
+                    sound="default",
+                ),
+            ),
+            apns=messaging.APNSConfig(
+                headers={"apns-priority": "10"},
+                payload=messaging.APNSPayload(
+                    aps=messaging.Aps(sound="default", content_available=True)
+                ),
+            ),
         )
+
         try:
             messaging.send(message)
             results.append((token, True, None))
