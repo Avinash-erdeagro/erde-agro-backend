@@ -27,6 +27,15 @@ jobs:
             ${{ secrets.DOCKER_HUB_USERNAME }}/farmapp-backend:latest
             ${{ secrets.DOCKER_HUB_USERNAME }}/farmapp-backend:${{ github.sha }}
 
+      - name: Copy compose file to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: docker-compose.prod.yml
+          target: /home/ubuntu/erde-agro-farmapp-backend/
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1
         with:

@@ -27,4 +27,5 @@ services:
       - .env
     volumes:
       - ./config/firebase-service-account.json:/app/config/firebase-service-account.json:ro
+    entrypoint: [""]
     command: celery -A config worker --loglevel=info --queues=default
