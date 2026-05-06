@@ -6,6 +6,7 @@ from authapp.api.views.base import BaseAPIView
 from satelliteapp.api.serializers import SatelliteBatchPayloadSerializer
 from satelliteapp.models import SatelliteEventReceipt
 from satelliteapp.services.signature import verify_satellite_signature
+from satelliteapp.tasks import process_satellite_receipt
 
 
 class SatelliteBatchReceiverView(BaseAPIView):
@@ -86,13 +87,14 @@ class SatelliteBatchReceiverView(BaseAPIView):
         if receipt_objects:
             try:
                 with transaction.atomic():
-                    SatelliteEventReceipt.objects.bulk_create(receipt_objects)
+                    created_receipts = SatelliteEventReceipt.objects.bulk_create(receipt_objects)
             except IntegrityError:
                 accepted_event_ids = []
+                created_receipts = []
 
                 for event_id, event, raw_event in fallback_events:
                     try:
-                        _, created = SatelliteEventReceipt.objects.get_or_create(
+                        receipt, created = SatelliteEventReceipt.objects.get_or_create(
                             event_id=event_id,
                             defaults={
                                 "batch_id": batch_id,
@@ -110,8 +112,12 @@ class SatelliteBatchReceiverView(BaseAPIView):
 
                     if created:
                         self._append_once(accepted_event_ids, event_id)
+                        created_receipts.append(receipt)
                     else:
                         self._append_once(duplicate_event_ids, event_id)
+
+            for receipt in created_receipts:
+                process_satellite_receipt.delay(receipt.id)
 
         return api_response(
             success=True,
