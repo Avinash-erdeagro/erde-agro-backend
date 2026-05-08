@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "storages",
     # Local
     "authapp",
+    "adminapp",
     "contentapp",
     "farmerapp",
     "billingapp",

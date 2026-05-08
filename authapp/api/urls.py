@@ -18,17 +18,6 @@ from .views import (
     HierarchyLevelListView,
     AccessibleOrgUnitListView,
     OrgUnitSubtreeView,
-    OrganizationListCreateView,
-    OrganizationDetailView,
-    HierarchyLevelListCreateView,
-    HierarchyLevelDetailView,
-    OrgUnitListCreateView,
-    OrgUnitDetailView,
-    OrgMembershipListCreateView,
-    OrgMembershipDetailView,
-    OrgUnitFPOListCreateView,
-    OrgUnitFPODetailView,
-    AdminUserCreateView,
 )
 
 router = DefaultRouter()
@@ -40,21 +29,6 @@ hierarchy_urlpatterns = [
     path("levels/", HierarchyLevelListView.as_view(), name="hierarchy-levels"),
     path("units/", AccessibleOrgUnitListView.as_view(), name="hierarchy-units"),
     path("units/<int:pk>/subtree/", OrgUnitSubtreeView.as_view(), name="hierarchy-unit-subtree"),
-]
-
-# SUPER_ADMIN management endpoints
-admin_urlpatterns = [
-    path("organizations/", OrganizationListCreateView.as_view(), name="admin-organizations"),
-    path("organizations/<int:pk>/", OrganizationDetailView.as_view(), name="admin-organization-detail"),
-    path("hierarchy-levels/", HierarchyLevelListCreateView.as_view(), name="admin-hierarchy-levels"),
-    path("hierarchy-levels/<int:pk>/", HierarchyLevelDetailView.as_view(), name="admin-hierarchy-level-detail"),
-    path("org-units/", OrgUnitListCreateView.as_view(), name="admin-org-units"),
-    path("org-units/<int:pk>/", OrgUnitDetailView.as_view(), name="admin-org-unit-detail"),
-    path("memberships/", OrgMembershipListCreateView.as_view(), name="admin-memberships"),
-    path("memberships/<int:pk>/", OrgMembershipDetailView.as_view(), name="admin-membership-detail"),
-    path("fpo-links/", OrgUnitFPOListCreateView.as_view(), name="admin-fpo-links"),
-    path("fpo-links/<int:pk>/", OrgUnitFPODetailView.as_view(), name="admin-fpo-link-detail"),
-    path("users/", AdminUserCreateView.as_view(), name="admin-user-create"),
 ]
 
 urlpatterns = [
@@ -69,6 +43,5 @@ urlpatterns = [
     path("fpo/my-profile/", FPOMyProfileView.as_view(), name="fpo-my-profile"),
     path("fpo-list/", FPOListView.as_view(), name="fpo-list"),
     path("hierarchy/", include(hierarchy_urlpatterns)),
-    path("admin/", include(admin_urlpatterns)),
     path("", include(router.urls)),
 ]
