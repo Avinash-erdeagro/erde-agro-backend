@@ -165,12 +165,11 @@ class AdminUserCreateView(APIView):
     """
     POST /super-admin/users/
 
-    Create an ORG_USER or SUPER_ADMIN account.
+    Create an ORG_USER account.
     The public /register/ endpoint only accepts FPO and FARMER.
 
     Body:
       { "username": "...", "password": "...", "role": "ORG_USER", "org_unit": 5 }
-      { "username": "...", "password": "...", "role": "SUPER_ADMIN" }
     """
     permission_classes = [IsSuperAdmin]
 
@@ -186,18 +185,13 @@ class AdminUserCreateView(APIView):
 
         data = serializer.validated_data
         role = data["role"]
-
-        if role == AppUser.Role.ORG_USER:
-            app_user = create_org_user(
-                username=data["username"],
-                password=data["password"],
-                org_unit=data["org_unit"],
-            )
-        else:
-            app_user = create_super_admin(
-                username=data["username"],
-                password=data["password"],
-            )
+        
+        app_user = create_org_user(
+            username=data["username"],
+            password=data["password"],
+            org_unit=data["org_unit"],
+        )
+        
 
         response_serializer = AdminUserCreateSerializer(app_user)
         return api_response(

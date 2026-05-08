@@ -100,15 +100,15 @@ class ImpersonationResponseSerializer(serializers.Serializer):
 
 class AdminUserCreateSerializer(serializers.Serializer):
     """
-    Used by POST /admin/users/ to create ORG_USER or SUPER_ADMIN accounts.
-    Only accepted roles are ORG_USER and SUPER_ADMIN.
-    `org_unit` is required when role is ORG_USER and ignored for SUPER_ADMIN.
+    Used by POST /admin/users/ to create ORG_USER accounts.
+    Only accepted role is ORG_USER.
+    `org_unit` is required when role is ORG_USER.
     """
 
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(write_only=True, min_length=8)
     role = serializers.ChoiceField(
-        choices=[AppUser.Role.ORG_USER, AppUser.Role.SUPER_ADMIN]
+        choices=[AppUser.Role.ORG_USER]
     )
     org_unit = serializers.PrimaryKeyRelatedField(
         queryset=OrgUnit.objects.all(),

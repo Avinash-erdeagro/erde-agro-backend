@@ -5,6 +5,15 @@ All authenticated requests require: `Authorization: Bearer <access_token>`
 
 ---
 
+## URL Prefixes
+
+| Prefix          | Purpose                                                                       |
+| --------------- | ----------------------------------------------------------------------------- |
+| `/auth/`        | Authentication, registration, and read-only hierarchy views                   |
+| `/super-admin/` | SUPER_ADMIN-only management (orgs, hierarchy, stats, notifications, payments) |
+
+---
+
 ## Roles
 
 | Role          | Description                                                                 |
@@ -82,7 +91,7 @@ curl -X POST http://localhost:8001/auth/token/refresh/ \
 ### Create Organization
 
 ```bash
-curl -X POST http://localhost:8001/auth/admin/organizations/ \
+curl -X POST http://localhost:8001/super-admin/organizations/ \
   -H "Authorization: Bearer <super_admin_token>" \
   -H "Content-Type: application/json" \
   -d '{"name": "Erde Agro Corp"}'
@@ -101,7 +110,7 @@ curl -X POST http://localhost:8001/auth/admin/organizations/ \
 ### List Organizations
 
 ```bash
-curl http://localhost:8001/auth/admin/organizations/ \
+curl http://localhost:8001/super-admin/organizations/ \
   -H "Authorization: Bearer <super_admin_token>"
 ```
 
@@ -109,17 +118,17 @@ curl http://localhost:8001/auth/admin/organizations/ \
 
 ```bash
 # GET
-curl http://localhost:8001/auth/admin/organizations/1/ \
+curl http://localhost:8001/super-admin/organizations/1/ \
   -H "Authorization: Bearer <super_admin_token>"
 
 # PATCH
-curl -X PATCH http://localhost:8001/auth/admin/organizations/1/ \
+curl -X PATCH http://localhost:8001/super-admin/organizations/1/ \
   -H "Authorization: Bearer <super_admin_token>" \
   -H "Content-Type: application/json" \
   -d '{"name": "Erde Agro Corp (Updated)"}'
 
 # DELETE
-curl -X DELETE http://localhost:8001/auth/admin/organizations/1/ \
+curl -X DELETE http://localhost:8001/super-admin/organizations/1/ \
   -H "Authorization: Bearer <super_admin_token>"
 ```
 
@@ -141,7 +150,7 @@ level=3  →  "Area Officer"
 ### Create a Hierarchy Level
 
 ```bash
-curl -X POST http://localhost:8001/auth/admin/hierarchy-levels/ \
+curl -X POST http://localhost:8001/super-admin/hierarchy-levels/ \
   -H "Authorization: Bearer <super_admin_token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -165,7 +174,7 @@ curl -X POST http://localhost:8001/auth/admin/hierarchy-levels/ \
 ### List Hierarchy Levels (filter by org)
 
 ```bash
-curl "http://localhost:8001/auth/admin/hierarchy-levels/?organization=1" \
+curl "http://localhost:8001/super-admin/hierarchy-levels/?organization=1" \
   -H "Authorization: Bearer <super_admin_token>"
 ```
 
@@ -173,13 +182,13 @@ curl "http://localhost:8001/auth/admin/hierarchy-levels/?organization=1" \
 
 ```bash
 # PATCH — rename a level
-curl -X PATCH http://localhost:8001/auth/admin/hierarchy-levels/2/ \
+curl -X PATCH http://localhost:8001/super-admin/hierarchy-levels/2/ \
   -H "Authorization: Bearer <super_admin_token>" \
   -H "Content-Type: application/json" \
   -d '{"name": "Regional Head"}'
 
 # DELETE
-curl -X DELETE http://localhost:8001/auth/admin/hierarchy-levels/2/ \
+curl -X DELETE http://localhost:8001/super-admin/hierarchy-levels/2/ \
   -H "Authorization: Bearer <super_admin_token>"
 ```
 
@@ -195,7 +204,7 @@ Multiple sibling units can share the same `hierarchy_level`.
 ### Create a Root Org Unit
 
 ```bash
-curl -X POST http://localhost:8001/auth/admin/org-units/ \
+curl -X POST http://localhost:8001/super-admin/org-units/ \
   -H "Authorization: Bearer <super_admin_token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -227,7 +236,7 @@ curl -X POST http://localhost:8001/auth/admin/org-units/ \
 ### Create a Child Org Unit
 
 ```bash
-curl -X POST http://localhost:8001/auth/admin/org-units/ \
+curl -X POST http://localhost:8001/super-admin/org-units/ \
   -H "Authorization: Bearer <super_admin_token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -252,7 +261,7 @@ curl -X POST http://localhost:8001/auth/admin/org-units/ \
 
 ```bash
 # Another State Head node under the same HQ
-curl -X POST http://localhost:8001/auth/admin/org-units/ \
+curl -X POST http://localhost:8001/super-admin/org-units/ \
   -H "Authorization: Bearer <super_admin_token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -276,7 +285,7 @@ curl -X POST http://localhost:8001/auth/admin/org-units/ \
 ### List Org Units (filter by org)
 
 ```bash
-curl "http://localhost:8001/auth/admin/org-units/?organization=1" \
+curl "http://localhost:8001/super-admin/org-units/?organization=1" \
   -H "Authorization: Bearer <super_admin_token>"
 ```
 
@@ -284,17 +293,17 @@ curl "http://localhost:8001/auth/admin/org-units/?organization=1" \
 
 ```bash
 # GET
-curl http://localhost:8001/auth/admin/org-units/2/ \
+curl http://localhost:8001/super-admin/org-units/2/ \
   -H "Authorization: Bearer <super_admin_token>"
 
 # PATCH — re-parent a node (all descendant paths update automatically)
-curl -X PATCH http://localhost:8001/auth/admin/org-units/2/ \
+curl -X PATCH http://localhost:8001/super-admin/org-units/2/ \
   -H "Authorization: Bearer <super_admin_token>" \
   -H "Content-Type: application/json" \
   -d '{"parent": 3}'
 
 # DELETE
-curl -X DELETE http://localhost:8001/auth/admin/org-units/2/ \
+curl -X DELETE http://localhost:8001/super-admin/org-units/2/ \
   -H "Authorization: Bearer <super_admin_token>"
 ```
 
@@ -308,7 +317,7 @@ The public `/auth/register/` endpoint only accepts `FPO` and `FARMER`.
 ### Create an ORG_USER (assign to an OrgUnit)
 
 ```bash
-curl -X POST http://localhost:8001/auth/admin/users/ \
+curl -X POST http://localhost:8001/super-admin/users/ \
   -H "Authorization: Bearer <super_admin_token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -336,7 +345,7 @@ curl -X POST http://localhost:8001/auth/admin/users/ \
 ### Create Another SUPER_ADMIN
 
 ```bash
-curl -X POST http://localhost:8001/auth/admin/users/ \
+curl -X POST http://localhost:8001/super-admin/users/ \
   -H "Authorization: Bearer <super_admin_token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -351,20 +360,20 @@ curl -X POST http://localhost:8001/auth/admin/users/ \
 ## 7. SUPER_ADMIN — OrgMembership Management
 
 Memberships link an ORG_USER AppUser to an OrgUnit.  
-Creating an ORG_USER via `POST /admin/users/` creates the membership automatically.  
+Creating an ORG_USER via `POST /super-admin/users/` creates the membership automatically.  
 Use these endpoints only if you need to reassign a user to a different unit.
 
 ### List Memberships (filter by org unit)
 
 ```bash
-curl "http://localhost:8001/auth/admin/memberships/?org_unit=2" \
+curl "http://localhost:8001/super-admin/memberships/?org_unit=2" \
   -H "Authorization: Bearer <super_admin_token>"
 ```
 
 ### Create a Membership manually
 
 ```bash
-curl -X POST http://localhost:8001/auth/admin/memberships/ \
+curl -X POST http://localhost:8001/super-admin/memberships/ \
   -H "Authorization: Bearer <super_admin_token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -377,13 +386,13 @@ curl -X POST http://localhost:8001/auth/admin/memberships/ \
 
 ```bash
 # PATCH — reassign user to a different unit
-curl -X PATCH http://localhost:8001/auth/admin/memberships/1/ \
+curl -X PATCH http://localhost:8001/super-admin/memberships/1/ \
   -H "Authorization: Bearer <super_admin_token>" \
   -H "Content-Type: application/json" \
   -d '{"org_unit": 3}'
 
 # DELETE — remove from hierarchy
-curl -X DELETE http://localhost:8001/auth/admin/memberships/1/ \
+curl -X DELETE http://localhost:8001/super-admin/memberships/1/ \
   -H "Authorization: Bearer <super_admin_token>"
 ```
 
@@ -396,7 +405,7 @@ Links an existing FpoProfile into the hierarchy under an OrgUnit.
 ### Link an FPO to an OrgUnit
 
 ```bash
-curl -X POST http://localhost:8001/auth/admin/fpo-links/ \
+curl -X POST http://localhost:8001/super-admin/fpo-links/ \
   -H "Authorization: Bearer <super_admin_token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -420,7 +429,7 @@ curl -X POST http://localhost:8001/auth/admin/fpo-links/ \
 ### List FPO Links (filter by org unit)
 
 ```bash
-curl "http://localhost:8001/auth/admin/fpo-links/?org_unit=4" \
+curl "http://localhost:8001/super-admin/fpo-links/?org_unit=4" \
   -H "Authorization: Bearer <super_admin_token>"
 ```
 
@@ -428,19 +437,21 @@ curl "http://localhost:8001/auth/admin/fpo-links/?org_unit=4" \
 
 ```bash
 # PATCH — move FPO to a different unit
-curl -X PATCH http://localhost:8001/auth/admin/fpo-links/1/ \
+curl -X PATCH http://localhost:8001/super-admin/fpo-links/1/ \
   -H "Authorization: Bearer <super_admin_token>" \
   -H "Content-Type: application/json" \
   -d '{"org_unit": 5}'
 
 # DELETE
-curl -X DELETE http://localhost:8001/auth/admin/fpo-links/1/ \
+curl -X DELETE http://localhost:8001/super-admin/fpo-links/1/ \
   -H "Authorization: Bearer <super_admin_token>"
 ```
 
 ---
 
 ## 9. Hierarchy Read Endpoints (SUPER_ADMIN + ORG_USER)
+
+These endpoints remain under `/auth/` and are accessible to both `SUPER_ADMIN` and `ORG_USER`.
 
 ### List Accessible Org Units
 
@@ -546,7 +557,252 @@ Use the returned `access` token as the `Authorization` header in subsequent requ
 
 ---
 
-## 11. Full Setup Walkthrough (Example)
+## 11. SUPER_ADMIN — Stats
+
+All stats endpoints support an optional `?organization=<id>` query parameter to scope results to a single organization.
+
+### Platform Overview
+
+```bash
+curl http://localhost:8001/super-admin/stats/overview/ \
+  -H "Authorization: Bearer <super_admin_token>"
+
+# Scoped to one org
+curl "http://localhost:8001/super-admin/stats/overview/?organization=1" \
+  -H "Authorization: Bearer <super_admin_token>"
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Platform overview stats.",
+  "result": {
+    "users": {
+      "super_admin": 2,
+      "org_users": 5,
+      "fpo": 12,
+      "farmer": 340
+    },
+    "fpo": {
+      "total": 12,
+      "linked_to_hierarchy": 10,
+      "unlinked": 2
+    },
+    "farmers": {
+      "total": 340,
+      "with_fpo": 320,
+      "without_fpo": 20
+    },
+    "farms": {
+      "total": 780
+    },
+    "satellite_subscriptions": {
+      "PAID": 5,
+      "SUBMITTED": 12,
+      "SYNCING": 40,
+      "COMPLETED": 200,
+      "FAILED": 3
+    },
+    "hierarchy": {
+      "organizations": 1,
+      "org_units": 4,
+      "org_users_assigned": 3
+    }
+  }
+}
+```
+
+### Per-FPO Stats
+
+```bash
+curl http://localhost:8001/super-admin/stats/fpos/ \
+  -H "Authorization: Bearer <super_admin_token>"
+
+# Scoped to one org
+curl "http://localhost:8001/super-admin/stats/fpos/?organization=1" \
+  -H "Authorization: Bearer <super_admin_token>"
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "FPO stats.",
+  "result": [
+    {
+      "fpo_id": 10,
+      "fpo_name": "Pune Farmers Co-op",
+      "farmer_count": 85,
+      "farm_count": 120,
+      "active_subscription_count": 45
+    }
+  ]
+}
+```
+
+---
+
+## 12. SUPER_ADMIN — Notifications
+
+### Device Token Coverage
+
+Summary of registered push notification tokens by platform.
+
+```bash
+curl http://localhost:8001/super-admin/notifications/device-tokens/ \
+  -H "Authorization: Bearer <super_admin_token>"
+
+# Scoped to one org
+curl "http://localhost:8001/super-admin/notifications/device-tokens/?organization=1" \
+  -H "Authorization: Bearer <super_admin_token>"
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Device token stats.",
+  "result": {
+    "total_tokens": 280,
+    "by_platform": {
+      "android": 190,
+      "ios": 90
+    }
+  }
+}
+```
+
+### Users Without a Device Token
+
+Lists users who have no registered push token (delivery gap diagnosis).
+
+```bash
+curl http://localhost:8001/super-admin/notifications/coverage/ \
+  -H "Authorization: Bearer <super_admin_token>"
+
+# Scoped to one org
+curl "http://localhost:8001/super-admin/notifications/coverage/?organization=1" \
+  -H "Authorization: Bearer <super_admin_token>"
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Users without a registered device token.",
+  "result": {
+    "count": 3,
+    "users": [
+      { "user_id": 12, "username": "area_officer_nashik", "role": "ORG_USER" }
+    ]
+  }
+}
+```
+
+---
+
+## 13. SUPER_ADMIN — Payments
+
+### List Active Satellite Plans
+
+```bash
+curl http://localhost:8001/super-admin/payments/plans/ \
+  -H "Authorization: Bearer <super_admin_token>"
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Active satellite plans.",
+  "result": [
+    {
+      "id": 1,
+      "name": "3 Month Plan",
+      "duration_days": 90,
+      "duration_months": 3,
+      "base_price_per_acre": "250.00",
+      "gst_percent": "18.00",
+      "total_price_per_acre": "295.00",
+      "commission_percent": "10.00",
+      "commission_amount_per_acre": "25.00",
+      "commission_gst_per_acre": "4.50",
+      "total_commission_per_acre": "29.50"
+    }
+  ]
+}
+```
+
+### Subscription Summary
+
+Overall status breakdown across the platform (or a single org).
+
+```bash
+curl http://localhost:8001/super-admin/payments/subscriptions/summary/ \
+  -H "Authorization: Bearer <super_admin_token>"
+
+# Scoped to one org
+curl "http://localhost:8001/super-admin/payments/subscriptions/summary/?organization=1" \
+  -H "Authorization: Bearer <super_admin_token>"
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Subscription summary.",
+  "result": {
+    "by_status": {
+      "PAID": 5,
+      "SUBMITTED": 12,
+      "SYNCING": 40,
+      "COMPLETED": 200,
+      "FAILED": 3
+    },
+    "completed_total_farm_area_acres": 4820.5
+  }
+}
+```
+
+### Per-FPO Subscription Detail
+
+```bash
+curl http://localhost:8001/super-admin/payments/subscriptions/by-fpo/ \
+  -H "Authorization: Bearer <super_admin_token>"
+
+# Scoped to one org
+curl "http://localhost:8001/super-admin/payments/subscriptions/by-fpo/?organization=1" \
+  -H "Authorization: Bearer <super_admin_token>"
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Per-FPO subscription details.",
+  "result": [
+    {
+      "fpo_id": 10,
+      "fpo_name": "Pune Farmers Co-op",
+      "active_subscriptions": 45,
+      "pending_subscriptions": 3,
+      "expired_subscriptions": 1
+    }
+  ]
+}
+```
+
+---
+
+## 14. Full Setup Walkthrough (Example)
 
 This example builds the hierarchy:
 
@@ -561,75 +817,75 @@ Corporate Admin (HQ)
 TOKEN="<super_admin_access_token>"
 
 # Step 1 — Create org
-curl -X POST http://localhost:8001/auth/admin/organizations/ \
+curl -X POST http://localhost:8001/super-admin/organizations/ \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"name": "Erde Agro Corp"}'
 # → org id=1
 
 # Step 2 — Create hierarchy levels
-curl -X POST http://localhost:8001/auth/admin/hierarchy-levels/ \
+curl -X POST http://localhost:8001/super-admin/hierarchy-levels/ \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"organization": 1, "name": "Corporate Admin", "level": 1}'
 # → level id=1
 
-curl -X POST http://localhost:8001/auth/admin/hierarchy-levels/ \
+curl -X POST http://localhost:8001/super-admin/hierarchy-levels/ \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"organization": 1, "name": "State Head", "level": 2}'
 # → level id=2
 
-curl -X POST http://localhost:8001/auth/admin/hierarchy-levels/ \
+curl -X POST http://localhost:8001/super-admin/hierarchy-levels/ \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"organization": 1, "name": "Area Officer", "level": 3}'
 # → level id=3
 
 # Step 3 — Create OrgUnit tree
-curl -X POST http://localhost:8001/auth/admin/org-units/ \
+curl -X POST http://localhost:8001/super-admin/org-units/ \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"organization": 1, "hierarchy_level": 1, "name": "HQ", "parent": null}'
 # → unit id=1, path="/1/"
 
-curl -X POST http://localhost:8001/auth/admin/org-units/ \
+curl -X POST http://localhost:8001/super-admin/org-units/ \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"organization": 1, "hierarchy_level": 2, "name": "Maharashtra Division", "parent": 1}'
 # → unit id=2, path="/1/2/"
 
-curl -X POST http://localhost:8001/auth/admin/org-units/ \
+curl -X POST http://localhost:8001/super-admin/org-units/ \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"organization": 1, "hierarchy_level": 3, "name": "Pune Area Office", "parent": 2}'
 # → unit id=3, path="/1/2/3/"
 
-curl -X POST http://localhost:8001/auth/admin/org-units/ \
+curl -X POST http://localhost:8001/super-admin/org-units/ \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"organization": 1, "hierarchy_level": 3, "name": "Nashik Area Office", "parent": 2}'
 # → unit id=4, path="/1/2/4/"
 
 # Step 4 — Create ORG_USER accounts
-curl -X POST http://localhost:8001/auth/admin/users/ \
+curl -X POST http://localhost:8001/super-admin/users/ \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"username": "state_head_mh", "password": "pass1234", "role": "ORG_USER", "org_unit": 2}'
 
-curl -X POST http://localhost:8001/auth/admin/users/ \
+curl -X POST http://localhost:8001/super-admin/users/ \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"username": "area_officer_pune", "password": "pass1234", "role": "ORG_USER", "org_unit": 3}'
 
-curl -X POST http://localhost:8001/auth/admin/users/ \
+curl -X POST http://localhost:8001/super-admin/users/ \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"username": "area_officer_nashik", "password": "pass1234", "role": "ORG_USER", "org_unit": 4}'
 
 # Step 5 — Link existing FPOs into the hierarchy
 # (fpo_profile IDs come from GET /auth/fpo-list/)
-curl -X POST http://localhost:8001/auth/admin/fpo-links/ \
+curl -X POST http://localhost:8001/super-admin/fpo-links/ \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"fpo_profile": 10, "org_unit": 3}'
 
-curl -X POST http://localhost:8001/auth/admin/fpo-links/ \
+curl -X POST http://localhost:8001/super-admin/fpo-links/ \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"fpo_profile": 11, "org_unit": 4}'
 ```
 
 ---
 
-## 12. What Each Role Sees
+## 15. What Each Role Sees
 
 | Role                           | `GET /auth/hierarchy/units/` | `GET` farmer/FPO data    |
 | ------------------------------ | ---------------------------- | ------------------------ |
@@ -641,7 +897,52 @@ curl -X POST http://localhost:8001/auth/admin/fpo-links/ \
 
 ---
 
-## 13. Standard Response Format
+## 16. Complete API Reference
+
+### `/auth/` endpoints
+
+| Method | URL                                   | Role                 | Description                      |
+| ------ | ------------------------------------- | -------------------- | -------------------------------- |
+| POST   | `/auth/register/`                     | Public               | Register FPO or FARMER account   |
+| POST   | `/auth/webapp/login/`                 | Public               | Login for SUPER_ADMIN / ORG_USER |
+| POST   | `/auth/fpo/login/`                    | Public               | Login for FPO                    |
+| POST   | `/auth/firebase-login/`               | Public               | Firebase phone login for FARMER  |
+| POST   | `/auth/farmer/check-otp/`             | Public               | Farmer OTP verification          |
+| POST   | `/auth/token/refresh/`                | Public               | Refresh JWT token                |
+| GET    | `/auth/farmer/my-profile/`            | FARMER               | Own farmer profile               |
+| GET    | `/auth/fpo/my-profile/`               | FPO                  | Own FPO profile                  |
+| GET    | `/auth/fpo-list/`                     | Authenticated        | List all FPO profiles            |
+| GET    | `/auth/hierarchy/units/`              | SUPER_ADMIN/ORG_USER | Accessible org units             |
+| GET    | `/auth/hierarchy/units/<id>/subtree/` | SUPER_ADMIN/ORG_USER | Full subtree under a node        |
+| GET    | `/auth/hierarchy/levels/`             | SUPER_ADMIN/ORG_USER | Hierarchy levels                 |
+| POST   | `/auth/hierarchy/impersonate/<id>/`   | SUPER_ADMIN/ORG_USER | Impersonate a user below you     |
+
+### `/super-admin/` endpoints
+
+| Method           | URL                                            | Description                                 |
+| ---------------- | ---------------------------------------------- | ------------------------------------------- |
+| GET/POST         | `/super-admin/organizations/`                  | List / create organizations                 |
+| GET/PATCH/DELETE | `/super-admin/organizations/<id>/`             | Retrieve / update / delete org              |
+| GET/POST         | `/super-admin/hierarchy-levels/`               | List / create hierarchy levels              |
+| GET/PATCH/DELETE | `/super-admin/hierarchy-levels/<id>/`          | Retrieve / update / delete level            |
+| GET/POST         | `/super-admin/org-units/`                      | List / create org units                     |
+| GET/PATCH/DELETE | `/super-admin/org-units/<id>/`                 | Retrieve / update / delete unit (re-parent) |
+| GET/POST         | `/super-admin/memberships/`                    | List / create memberships                   |
+| GET/PATCH/DELETE | `/super-admin/memberships/<id>/`               | Retrieve / update / delete membership       |
+| GET/POST         | `/super-admin/fpo-links/`                      | List / create FPO ↔ OrgUnit links           |
+| GET/PATCH/DELETE | `/super-admin/fpo-links/<id>/`                 | Retrieve / update / delete FPO link         |
+| POST             | `/super-admin/users/`                          | Create ORG_USER or SUPER_ADMIN account      |
+| GET              | `/super-admin/stats/overview/`                 | Platform-wide counts and summary            |
+| GET              | `/super-admin/stats/fpos/`                     | Per-FPO farmer / farm / subscription counts |
+| GET              | `/super-admin/notifications/device-tokens/`    | Device token counts by platform             |
+| GET              | `/super-admin/notifications/coverage/`         | Users with no registered device token       |
+| GET              | `/super-admin/payments/plans/`                 | Active satellite subscription plans         |
+| GET              | `/super-admin/payments/subscriptions/summary/` | Subscription status breakdown               |
+| GET              | `/super-admin/payments/subscriptions/by-fpo/`  | Per-FPO subscription counts                 |
+
+---
+
+## 17. Standard Response Format
 
 All endpoints return:
 
