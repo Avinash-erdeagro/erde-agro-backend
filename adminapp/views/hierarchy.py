@@ -34,8 +34,8 @@ from authapp.api.serializers.hierarchy import (
 
 class OrganizationListCreateView(ListCreateAPIView):
     """
-    GET  /mgmt/organizations/   — list all organizations
-    POST /mgmt/organizations/   — create a new organization
+    GET  /super-admin/organizations/   — list all organizations
+    POST /super-admin/organizations/   — create a new organization
     """
     permission_classes = [IsSuperAdmin]
     serializer_class = OrganizationSerializer
@@ -43,7 +43,7 @@ class OrganizationListCreateView(ListCreateAPIView):
 
 
 class OrganizationDetailView(RetrieveUpdateDestroyAPIView):
-    """GET/PATCH/DELETE /mgmt/organizations/<id>/"""
+    """GET/PATCH/DELETE /super-admin/organizations/<id>/"""
     permission_classes = [IsSuperAdmin]
     serializer_class = OrganizationSerializer
     queryset = Organization.objects.all()
@@ -51,8 +51,8 @@ class OrganizationDetailView(RetrieveUpdateDestroyAPIView):
 
 class HierarchyLevelListCreateView(ListCreateAPIView):
     """
-    GET  /mgmt/hierarchy-levels/?organization=<id>   — list levels
-    POST /mgmt/hierarchy-levels/                     — add a new level
+    GET  /super-admin/hierarchy-levels/?organization=<id>   — list levels
+    POST /super-admin/hierarchy-levels/                     — add a new level
     """
     permission_classes = [IsSuperAdmin]
     serializer_class = HierarchyLevelSerializer
@@ -66,7 +66,7 @@ class HierarchyLevelListCreateView(ListCreateAPIView):
 
 
 class HierarchyLevelDetailView(RetrieveUpdateDestroyAPIView):
-    """GET/PATCH/DELETE /mgmt/hierarchy-levels/<id>/"""
+    """GET/PATCH/DELETE /super-admin/hierarchy-levels/<id>/"""
     permission_classes = [IsSuperAdmin]
     serializer_class = HierarchyLevelSerializer
     queryset = HierarchyLevel.objects.all()
@@ -74,8 +74,8 @@ class HierarchyLevelDetailView(RetrieveUpdateDestroyAPIView):
 
 class OrgUnitListCreateView(ListCreateAPIView):
     """
-    GET  /mgmt/org-units/?organization=<id>   — list all org units
-    POST /mgmt/org-units/                     — create a new org unit
+    GET  /super-admin/org-units/?organization=<id>   — list all org units
+    POST /super-admin/org-units/                     — create a new org unit
 
     Materialized path is computed automatically on creation.
     """
@@ -96,7 +96,7 @@ class OrgUnitListCreateView(ListCreateAPIView):
 
 class OrgUnitDetailView(RetrieveUpdateDestroyAPIView):
     """
-    GET/PATCH/DELETE /mgmt/org-units/<id>/
+    GET/PATCH/DELETE /super-admin/org-units/<id>/
 
     PATCHing `parent` re-parents the node and updates all descendant paths.
     """
@@ -117,8 +117,8 @@ class OrgUnitDetailView(RetrieveUpdateDestroyAPIView):
 
 class OrgMembershipListCreateView(ListCreateAPIView):
     """
-    GET  /mgmt/memberships/?org_unit=<id>   — list memberships
-    POST /mgmt/memberships/                 — assign an ORG_USER to an OrgUnit
+    GET  /super-admin/memberships/?org_unit=<id>   — list memberships
+    POST /super-admin/memberships/                 — assign an ORG_USER to an OrgUnit
     """
     permission_classes = [IsSuperAdmin]
     serializer_class = OrgMembershipSerializer
@@ -132,7 +132,7 @@ class OrgMembershipListCreateView(ListCreateAPIView):
 
 
 class OrgMembershipDetailView(RetrieveUpdateDestroyAPIView):
-    """GET/PATCH/DELETE /mgmt/memberships/<id>/"""
+    """GET/PATCH/DELETE /super-admin/memberships/<id>/"""
     permission_classes = [IsSuperAdmin]
     serializer_class = OrgMembershipSerializer
     queryset = OrgMembership.objects.select_related("app_user", "org_unit")
@@ -140,8 +140,8 @@ class OrgMembershipDetailView(RetrieveUpdateDestroyAPIView):
 
 class OrgUnitFPOListCreateView(ListCreateAPIView):
     """
-    GET  /mgmt/fpo-links/?org_unit=<id>   — list FPO ↔ OrgUnit links
-    POST /mgmt/fpo-links/                 — link an FPO to an OrgUnit
+    GET  /super-admin/fpo-links/?org_unit=<id>   — list FPO ↔ OrgUnit links
+    POST /super-admin/fpo-links/                 — link an FPO to an OrgUnit
     """
     permission_classes = [IsSuperAdmin]
     serializer_class = OrgUnitFPOSerializer
@@ -155,7 +155,7 @@ class OrgUnitFPOListCreateView(ListCreateAPIView):
 
 
 class OrgUnitFPODetailView(RetrieveUpdateDestroyAPIView):
-    """GET/PATCH/DELETE /mgmt/fpo-links/<id>/"""
+    """GET/PATCH/DELETE /super-admin/fpo-links/<id>/"""
     permission_classes = [IsSuperAdmin]
     serializer_class = OrgUnitFPOSerializer
     queryset = OrgUnitFPO.objects.select_related("fpo_profile", "org_unit")
@@ -163,7 +163,7 @@ class OrgUnitFPODetailView(RetrieveUpdateDestroyAPIView):
 
 class AdminUserCreateView(APIView):
     """
-    POST /mgmt/users/
+    POST /super-admin/users/
 
     Create an ORG_USER or SUPER_ADMIN account.
     The public /register/ endpoint only accepts FPO and FARMER.
