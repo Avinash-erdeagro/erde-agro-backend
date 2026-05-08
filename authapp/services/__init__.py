@@ -1,5 +1,5 @@
 from .locality import get_or_create_locality, normalize_locality_data
-from .registration import register_user
+from .registration import register_user, create_org_user, create_super_admin
 from .pincode import fetch_localities_by_pincode, PincodeLookupError
 from .firebase import verify_firebase_id_token
 from .phone import normalize_indian_phone_number
@@ -23,5 +23,7 @@ __all__ = [
     "check_farmer_otp_eligibility",
     "login_farmer_with_firebase",
     "login_fpo",
-    login_webapp,
+    "login_webapp",
+    "create_org_user",
+    "create_super_admin",
 ]

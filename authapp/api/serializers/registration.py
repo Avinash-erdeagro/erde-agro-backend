@@ -9,7 +9,11 @@ User = get_user_model()
 
 class UserRegistrationSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=6)
-    role = serializers.ChoiceField(choices=AppUser.Role.choices)
+    # Public registration is intentionally limited to FPO and FARMER.
+    # ORG_USER and SUPER_ADMIN accounts must be created via /admin/users/.
+    role = serializers.ChoiceField(
+        choices=[AppUser.Role.FPO, AppUser.Role.FARMER]
+    )
     locality = LocalitySerializer(required=True, write_only=True)
 
     id = serializers.IntegerField(read_only=True)

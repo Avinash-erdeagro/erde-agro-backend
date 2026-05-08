@@ -2,9 +2,11 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 
 from authapp.models import AppUser, FarmerProfile, FpoProfile
+from authapp.models.hierarchy import OrgMembership, OrgUnit
 from authapp.services.locality import get_or_create_locality
 
 User = get_user_model()
+
 
 @transaction.atomic
 def register_user(validated_data):
@@ -45,3 +47,29 @@ def register_user(validated_data):
     )
 
     return app_user
+
+
+@transaction.atomic
+def create_org_user(username: str, password: str, org_unit: OrgUnit) -> AppUser:
+    """
+    Create an ORG_USER AppUser and assign them to `org_unit`.
+    Only callable by SUPER_ADMIN (enforced at the view layer).
+    """
+    user = User.objects.create_user(username=username, password=password)
+    user.is_staff = True  # allows Django admin panel login
+    user.save(update_fields=["is_staff"])
+    app_user = AppUser.objects.create(user=user, role=AppUser.Role.ORG_USER)
+    OrgMembership.objects.create(app_user=app_user, org_unit=org_unit)
+    return app_user
+
+
+@transaction.atomic
+def create_super_admin(username: str, password: str) -> AppUser:
+    """
+    Create a SUPER_ADMIN AppUser.
+    Only callable by an existing SUPER_ADMIN (enforced at the view layer).
+    """
+    user = User.objects.create_user(username=username, password=password)
+    user.is_staff = True  # allows Django admin panel login
+    user.save(update_fields=["is_staff"])
+    return AppUser.objects.create(user=user, role=AppUser.Role.SUPER_ADMIN)
