@@ -56,8 +56,6 @@ def create_org_user(username: str, password: str, org_unit: OrgUnit) -> AppUser:
     Only callable by SUPER_ADMIN (enforced at the view layer).
     """
     user = User.objects.create_user(username=username, password=password)
-    user.is_staff = True  # allows Django admin panel login
-    user.save(update_fields=["is_staff"])
     app_user = AppUser.objects.create(user=user, role=AppUser.Role.ORG_USER)
     OrgMembership.objects.create(app_user=app_user, org_unit=org_unit)
     return app_user
@@ -70,6 +68,4 @@ def create_super_admin(username: str, password: str) -> AppUser:
     Only callable by an existing SUPER_ADMIN (enforced at the view layer).
     """
     user = User.objects.create_user(username=username, password=password)
-    user.is_staff = True  # allows Django admin panel login
-    user.save(update_fields=["is_staff"])
     return AppUser.objects.create(user=user, role=AppUser.Role.SUPER_ADMIN)

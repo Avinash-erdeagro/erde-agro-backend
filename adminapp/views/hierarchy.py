@@ -185,18 +185,22 @@ class AdminUserCreateView(APIView):
 
         data = serializer.validated_data
         role = data["role"]
-        
+
         app_user = create_org_user(
             username=data["username"],
             password=data["password"],
             org_unit=data["org_unit"],
         )
-        
 
-        response_serializer = AdminUserCreateSerializer(app_user)
         return api_response(
             success=True,
             message=f"{role} account created successfully.",
-            result=response_serializer.data,
+            result={
+                "id": app_user.pk,
+                "username": app_user.user.username,
+                "role": app_user.role,
+                "org_unit": app_user.org_membership.org_unit_id,
+                "org_unit_name": app_user.org_membership.org_unit.name,
+            },
             status_code=status.HTTP_201_CREATED,
         )
