@@ -12,6 +12,12 @@ from .hierarchy import (
     OrganizationListCreateView,
 )
 from .notifications import DeviceTokenStatsView, UserNotificationCoverageView
+from .org_data import (
+    HierarchyFPODetailView,
+    HierarchyFPOListView,
+    HierarchyFarmerDetailView,
+    HierarchyFarmerListView,
+)
 from .payments import FPOSubscriptionDetailView, SatellitePlanListView, SubscriptionSummaryView
 from .stats import FPOStatsView, PlatformOverviewStatsView
 
@@ -28,6 +34,11 @@ __all__ = [
     "OrgUnitFPOListCreateView",
     "OrgUnitFPODetailView",
     "AdminUserCreateView",
+    # Org data (hierarchy-scoped)
+    "HierarchyFPOListView",
+    "HierarchyFPODetailView",
+    "HierarchyFarmerListView",
+    "HierarchyFarmerDetailView",
     # Stats
     "PlatformOverviewStatsView",
     "FPOStatsView",

@@ -13,6 +13,11 @@ from adminapp.views import (
     OrgUnitListCreateView,
     OrganizationDetailView,
     OrganizationListCreateView,
+    # Org data (hierarchy-scoped)
+    HierarchyFPODetailView,
+    HierarchyFPOListView,
+    HierarchyFarmerDetailView,
+    HierarchyFarmerListView,
     # Stats
     FPOStatsView,
     PlatformOverviewStatsView,
@@ -40,6 +45,12 @@ urlpatterns = [
     path("fpo-links/", OrgUnitFPOListCreateView.as_view(), name="fpo-link-list"),
     path("fpo-links/<int:pk>/", OrgUnitFPODetailView.as_view(), name="fpo-link-detail"),
     path("users/", AdminUserCreateView.as_view(), name="admin-user-create"),
+
+    # ── Org data (hierarchy-scoped, SUPER_ADMIN + ORG_USER) ──────────────────
+    path("org-data/fpos/", HierarchyFPOListView.as_view(), name="org-fpo-list"),
+    path("org-data/fpos/<int:pk>/", HierarchyFPODetailView.as_view(), name="org-fpo-detail"),
+    path("org-data/farmers/", HierarchyFarmerListView.as_view(), name="org-farmer-list"),
+    path("org-data/farmers/<int:pk>/", HierarchyFarmerDetailView.as_view(), name="org-farmer-detail"),
 
     # ── Stats ─────────────────────────────────────────────────────────────────
     path("stats/overview/", PlatformOverviewStatsView.as_view(), name="stats-overview"),
