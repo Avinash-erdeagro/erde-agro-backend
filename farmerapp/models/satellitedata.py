@@ -1,3 +1,6 @@
+import calendar
+from datetime import date
+
 from django.db import models
 from django.utils import timezone
 from .farm import Farm
@@ -21,7 +24,6 @@ class FarmSatelliteSubscription(models.Model):
         max_length=255,
         null=True,
         blank=True,
-        unique=True,
     )
     irriwatch_field_uuid = models.CharField(
         max_length=255,
@@ -32,7 +34,7 @@ class FarmSatelliteSubscription(models.Model):
 
     subscription_start = models.DateField()
     subscription_duration_months = models.PositiveIntegerField()
-    subscription_end = models.DateField()
+    subscription_end = models.DateField(editable=False)
 
     payment_reference = models.CharField(max_length=255)
 
@@ -67,6 +69,14 @@ class FarmSatelliteSubscription(models.Model):
                 name="unique_active_subscription_per_farm",
             ),
         ]
+
+    def save(self, *args, **kwargs):
+        month = self.subscription_start.month - 1 + self.subscription_duration_months
+        year = self.subscription_start.year + month // 12
+        month = month % 12 + 1
+        day = min(self.subscription_start.day, calendar.monthrange(year, month)[1])
+        self.subscription_end = date(year, month, day)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.farm} - {self.status}"
