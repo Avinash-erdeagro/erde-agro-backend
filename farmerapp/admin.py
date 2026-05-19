@@ -36,3 +36,4 @@ class FarmCropAdmin(admin.ModelAdmin):
 @admin.register(FarmSatelliteSubscription)
 class FarmSatelliteSubscriptionAdmin(admin.ModelAdmin):
     list_display = ("id", "farm", "irriwatch_order_uuid", "subscription_start", "subscription_end", "status", "created_at")
+    readonly_fields = ("subscription_end",)
