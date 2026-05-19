@@ -14,11 +14,22 @@ from .views import (
     UserRegistrationView,
     TokenRefreshApiView,
     WebAppLoginView,
+    ImpersonateUserView,
+    HierarchyLevelListView,
+    AccessibleOrgUnitListView,
+    OrgUnitSubtreeView,
 )
 
 router = DefaultRouter()
 router.register("fpo-profiles", FPOProfileViewSet, basename="fpo-profile")
 router.register("farmer-profiles", FarmerProfileViewSet, basename="farmer-profile")
+
+hierarchy_urlpatterns = [
+    path("impersonate/<int:user_id>/", ImpersonateUserView.as_view(), name="hierarchy-impersonate"),
+    path("levels/", HierarchyLevelListView.as_view(), name="hierarchy-levels"),
+    path("units/", AccessibleOrgUnitListView.as_view(), name="hierarchy-units"),
+    path("units/<int:pk>/subtree/", OrgUnitSubtreeView.as_view(), name="hierarchy-unit-subtree"),
+]
 
 urlpatterns = [
     path("register/", UserRegistrationView.as_view(), name="register"),
@@ -31,5 +42,6 @@ urlpatterns = [
     path("farmer/my-profile/", FarmerMyProfileView.as_view(), name="farmer-my-profile"),
     path("fpo/my-profile/", FPOMyProfileView.as_view(), name="fpo-my-profile"),
     path("fpo-list/", FPOListView.as_view(), name="fpo-list"),
+    path("hierarchy/", include(hierarchy_urlpatterns)),
     path("", include(router.urls)),
 ]

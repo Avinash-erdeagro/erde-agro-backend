@@ -5,6 +5,8 @@ User = get_user_model()
 
 class AppUser(models.Model):
 	class Role(models.TextChoices):
+		SUPER_ADMIN = "SUPER_ADMIN", "Super Admin"
+		ORG_USER = "ORG_USER", "Org User"
 		FPO = "FPO", "FPO"
 		FARMER = "FARMER", "FARMER"
 
