@@ -5,6 +5,7 @@ from rest_framework import serializers
 
 from farmerapp.models import Farm, FarmCrop
 from authapp.models import FarmerProfile
+from farmerapp.api.serializers.lookups import SoilTypeSerializer, IrrigationTypeSerializer, CropTypeSerializer
 
 
 class FarmCropSerializer(serializers.ModelSerializer):
@@ -41,11 +42,16 @@ class FarmCropSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-        rep["primary_crop"] = instance.primary_crop_name
+        if instance.primary_crop_id:
+            rep["primary_crop"] = CropTypeSerializer(instance.primary_crop).data
+        else:
+            rep["primary_crop"] = {"id": None, "name": instance.custom_primary_crop_name}
         rep["primary_crop_variety"] = instance.primary_crop_variety or None
-        rep["intercrop"] = instance.intercrop_name
+        if instance.intercrop_id:
+            rep["intercrop"] = CropTypeSerializer(instance.intercrop).data
+        else:
+            rep["intercrop"] = {"id": None, "name": instance.custom_intercrop_name} if instance.custom_intercrop_name else None
         rep["intercrop_variety"] = instance.intercrop_variety or None
-        # Remove internal custom fields from response
         rep.pop("custom_primary_crop_name", None)
         rep.pop("custom_intercrop_name", None)
         return rep
@@ -70,8 +76,8 @@ class FarmSerializer(serializers.ModelSerializer):
         if instance.boundary:
             rep["boundary"] = json.loads(instance.boundary.geojson)
         rep["farmer"] = str(instance.farmer)
-        rep["soil_type"] = instance.soil_type.name
-        rep["irrigation_type"] = instance.irrigation_type.name
+        rep["soil_type"] = SoilTypeSerializer(instance.soil_type).data
+        rep["irrigation_type"] = IrrigationTypeSerializer(instance.irrigation_type).data
         return rep
 
     def validate(self, attrs):

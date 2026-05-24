@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from farmerapp.api.serializers import FarmSerializer
+from farmerapp.api.serializers.lookups import CropTypeSerializer
 from authapp.api.serializers.locality import LocalitySerializer
 from authapp.models import AppUser, FarmerProfile
 from authapp.services import normalize_indian_phone_number
@@ -59,7 +60,10 @@ class FPOFarmerListSerializer(serializers.ModelSerializer):
             plantation_date = None
             for crop in farm.crops.all():
                 if getattr(crop, 'is_active', False):
-                    active_crop = crop.primary_crop_name
+                    if crop.primary_crop_id:
+                        active_crop = CropTypeSerializer(crop.primary_crop).data
+                    else:
+                        active_crop = {"id": None, "name": crop.custom_primary_crop_name}
                     plantation_date = crop.plantation_date
                     break
             farm_data['active_crop'] = active_crop

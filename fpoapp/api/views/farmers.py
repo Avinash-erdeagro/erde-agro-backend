@@ -11,6 +11,7 @@ from fpoapp.api.serializers import (
 )
 from fpoapp.services import create_farmer_under_fpo
 from farmerapp.models import FarmCrop
+from farmerapp.api.serializers.lookups import CropTypeSerializer
 from django.db.models import Count, Prefetch, OuterRef, Exists
 from satelliteapp.models import SatelliteFarmAlert, SatelliteFarmNotification
 from datetime import datetime, timedelta
@@ -387,7 +388,10 @@ class FPOFarmerFarmsListView(FPOBaseAPIView):
 
             if getattr(farm, "active_crops", []):
                 active = farm.active_crops[0]
-                active_crop = active.primary_crop_name
+                if active.primary_crop_id:
+                    active_crop = CropTypeSerializer(active.primary_crop).data
+                else:
+                    active_crop = {"id": None, "name": active.custom_primary_crop_name}
                 plantation_date = active.plantation_date
 
             farm_list.append({
