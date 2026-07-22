@@ -10,9 +10,25 @@ class AppUser(models.Model):
 		FPO = "FPO", "FPO"
 		FARMER = "FARMER", "FARMER"
 
+	class PreferredLanguage(models.TextChoices):
+		ENGLISH = "en", "English"
+		HINDI = "hi", "Hindi"
+		MARATHI = "mr", "Marathi"
+		GUJARATI = "gu", "Gujarati"
+		PUNJABI = "pa", "Punjabi"
+		BANGLA = "bn", "Bangla"
+		KANNADA = "kn", "Kannada"
+		TELUGU = "te", "Telugu"
+		TAMIL = "ta", "Tamil"
+
 	user = models.OneToOneField(User, on_delete=models.CASCADE)
 	role = models.CharField(max_length=20, choices=Role.choices)
-	
+	preferred_language = models.CharField(
+		max_length=5,
+		choices=PreferredLanguage.choices,
+		default=PreferredLanguage.ENGLISH,
+	)
+
 	def __str__(self) -> str:
 		return f"{self.user.username} ({self.role})"
 

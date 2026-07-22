@@ -5,6 +5,7 @@ from .profiles import (
     FPOMyProfileView,
     FPOProfileViewSet,
 )
+from .preferences import PreferredLanguageView
 from .registration import UserRegistrationView
 from .pincode import PincodeLookupView
 from .authentication import (
@@ -27,6 +28,7 @@ __all__ = [
     "FPOListView",
     "FPOMyProfileView",
     "FPOProfileViewSet",
+    "PreferredLanguageView",
     "UserRegistrationView",
     "PincodeLookupView",
     "FarmerFirebaseLoginView",
