@@ -6,6 +6,7 @@ from .profiles import (
     FPOMyProfileSerializer,
     FpoProfileSerializer,
 )
+from .preferences import PreferredLanguageSerializer
 from .registration import UserRegistrationSerializer
 from .pincode import PincodeLookupResultSerializer
 from .hierarchy import (
@@ -32,6 +33,7 @@ __all__ = [
     "FPOListSerializer",
     "FPOMyProfileSerializer",
     "FpoProfileSerializer",
+    "PreferredLanguageSerializer",
     "UserRegistrationSerializer",
     "PincodeLookupResultSerializer",
     "FarmerFirebaseLoginSerializer",
