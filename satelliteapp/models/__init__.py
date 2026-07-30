@@ -2,8 +2,8 @@ from .provider import (
     Company,
     OrderStatus,
     Order,
-    OrderFieldStatus,
-    OrderField,
+    OrderFarmStatus,
+    OrderFarm,
     SatelliteResult,
 )
 from .alerts import (
@@ -20,8 +20,8 @@ __all__ = [
     "Company",
     "OrderStatus",
     "Order",
-    "OrderFieldStatus",
-    "OrderField",
+    "OrderFarmStatus",
+    "OrderFarm",
     "SatelliteResult",
     "AlertType",
     "SatelliteFarmAlert",
