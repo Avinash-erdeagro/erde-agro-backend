@@ -88,8 +88,8 @@ def _format_satellite_notification(notification_type: str, details_json: dict):
 def send_pending_satellite_notifications(notification_qs):
     """
     Given a queryset of SatelliteFarmNotification objects (typically those
-    with push_status=PENDING for a single receipt), attempt to send an FCM
-    push to each farm's owner and update push_status accordingly.
+    created this run with push_status=PENDING), attempt to send an FCM push
+    to each farm's owner and update push_status accordingly.
 
     Returns (sent_count, failed_count, no_device_count).
     """
@@ -97,20 +97,21 @@ def send_pending_satellite_notifications(notification_qs):
 
     sent = failed = no_devices = 0
 
-    # Prefetch to avoid N+1 queries: farm → farmer (AppUser) → user (Django User)
+    # Prefetch to avoid N+1 queries:
+    # order_farm → farm → farmer (AppUser) → user (Django User)
     notifications = notification_qs.select_related(
-        "farm__farmer__user"
+        "order_farm__farm__farmer__user"
     )
 
     for notif in notifications:
-        django_user = notif.farm.farmer.user
+        django_user = notif.order_farm.farm.farmer.user
         title, body = _format_satellite_notification(
             notif.notification_type, notif.details_json
         )
         data = {
             "notification_id": str(notif.id),
             "notification_type": notif.notification_type,
-            "farm_id": str(notif.farm_id),
+             "farm_id": str(notif.order_farm.farm_id),
             "observation_date": str(notif.observation_date),
         }
 

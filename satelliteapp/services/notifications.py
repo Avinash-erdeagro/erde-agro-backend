@@ -171,7 +171,9 @@ def build_notification_payloads_for_result(
     return notifications
 
 
-def sync_notifications_for_result(satellite_result: SatelliteResult) -> None:
+def sync_notifications_for_result(
+    satellite_result: SatelliteResult,
+) -> list[SatelliteFarmNotification]:
     desired_notifications = build_notification_payloads_for_result(satellite_result)
 
     existing_notifications = SatelliteFarmNotification.objects.filter(
@@ -183,6 +185,8 @@ def sync_notifications_for_result(satellite_result: SatelliteResult) -> None:
         for notification in existing_notifications
     }
 
+    created: list[SatelliteFarmNotification] = []
+
     for notification_type, details_json in desired_notifications.items():
         existing_notification = existing_by_type.get(notification_type)
 
@@ -191,13 +195,17 @@ def sync_notifications_for_result(satellite_result: SatelliteResult) -> None:
             existing_notification.save(update_fields=["details_json"])
             continue
 
-        SatelliteFarmNotification.objects.create(
-            order_farm_id=satellite_result.order_farm_id,
-            observation_date=satellite_result.observation_date,
-            notification_type=notification_type,
-            details_json=details_json,
+        created.append(
+            SatelliteFarmNotification.objects.create(
+                order_farm_id=satellite_result.order_farm_id,
+                observation_date=satellite_result.observation_date,
+                notification_type=notification_type,
+                details_json=details_json,
+            )
         )
 
     for notification_type, existing_notification in existing_by_type.items():
         if notification_type not in desired_notifications:
             existing_notification.delete()
+
+    return created
