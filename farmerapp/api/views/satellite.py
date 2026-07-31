@@ -1,3 +1,5 @@
+import json
+
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -576,7 +578,7 @@ class FarmerSatelliteMapLayersView(BaseAPIView):
                 )
             )
             .filter(latest_subscription_status=SatelliteSubscriptionStatus.SYNCING)
-            .only("id", "farm_name", "area")
+            .only("id", "farm_name", "area", "boundary")
             .prefetch_related(Prefetch("crops", queryset=crop_queryset))
         )
 
@@ -593,6 +595,7 @@ class FarmerSatelliteMapLayersView(BaseAPIView):
                     "farm_name": farm.farm_name,
                     "area": farm.area,
                     "crop_name": crop.primary_crop_name if crop else None,
+                    "boundary": json.loads(farm.boundary.geojson) if farm.boundary else None,
                     "observation_date": layers_result.get("observation_date"),
                     "layers": layers_result.get("layers", []),
                 }

@@ -15,6 +15,9 @@ from .notifications import (
     SatelliteFarmNotificationPushStatus,
     SatelliteFarmNotification,
 )
+from .maplayers import (
+    SatelliteMapLayer,
+)
 
 __all__ = [
     "Company",
@@ -28,4 +31,5 @@ __all__ = [
     "NotificationType",
     "SatelliteFarmNotificationPushStatus",
     "SatelliteFarmNotification",
+    "SatelliteMapLayer",
 ]

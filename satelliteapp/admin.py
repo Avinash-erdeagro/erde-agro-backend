@@ -7,6 +7,7 @@ from satelliteapp.models import (
     SatelliteResult,
     SatelliteFarmAlert,
     SatelliteFarmNotification,
+    SatelliteMapLayer,
 )
 
 
@@ -61,4 +62,11 @@ class SatelliteFarmNotificationAdmin(admin.ModelAdmin):
     list_filter = ("push_status", "notification_type")
     search_fields = ("order_farm__irriwatch_field_uuid", "notification_type")
     readonly_fields = ("push_failure_reason",)
+    ordering = ("-created_at",)
+
+
+@admin.register(SatelliteMapLayer)
+class SatelliteMapLayerAdmin(admin.ModelAdmin):
+    list_display = ("id", "order_farm", "observation_date", "created_at")
+    search_fields = ("order_farm__irriwatch_field_uuid",)
     ordering = ("-created_at",)

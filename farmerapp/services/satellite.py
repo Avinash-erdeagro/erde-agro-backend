@@ -5,6 +5,7 @@ from satelliteapp.models import (
     SatelliteFarmAlert,
     SatelliteFarmNotification,
     SatelliteResult,
+    SatelliteMapLayer
 )
 from satelliteapp.services.metrics import (
     build_irrigation_advisory,
@@ -284,6 +285,36 @@ def fetch_farm_charts(*, farm_id: int, observation_date: str):
 
 
 def fetch_farm_map_layers_by_farm_ids(*, observation_date: str, farm_ids: list[int]):
-    # Map layers come from the deferred TIFF -> PNG rendering job (not built yet).
-    # Return the envelope with empty results so the endpoint keeps working.
-    return {"observation_date": previous_day(observation_date).isoformat(), "results": []}
+    if not farm_ids:
+        return {"observation_date": observation_date, "results": []}
+
+    obs_date = previous_day(observation_date)
+
+    rows = (
+        SatelliteMapLayer.objects
+        .filter(order_farm__farm_id__in=farm_ids, observation_date=obs_date)
+        .order_by("order_farm__farm_id", "band_number")
+        .values(
+            "order_farm__farm_id", "band_number", "layer_name", "unit",
+            "png_url", "bounds", "legend", "is_categorical",
+        )
+    )
+
+    layers_by_farm: dict[int, list] = {}
+    for row in rows:
+        farm_id = row["order_farm__farm_id"]
+        layers_by_farm.setdefault(farm_id, []).append({
+            "band_number": row["band_number"],
+            "layer_name": row["layer_name"],
+            "unit": row["unit"],
+            "png_url": row["png_url"],
+            "bounds": row["bounds"],
+            "legend": row["legend"],
+            "is_categorical": row["is_categorical"],
+        })
+
+    results = [
+        {"farm_id": farm_id, "observation_date": obs_date.isoformat(), "layers": layers}
+        for farm_id, layers in layers_by_farm.items()
+    ]
+    return {"observation_date": obs_date.isoformat(), "results": results}

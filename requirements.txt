@@ -16,3 +16,7 @@ Pillow
 celery[redis]==5.4.0
 redis==5.2.1
 openpyxl
+# Satellite GeoTIFF -> PNG 
+numpy
+matplotlib
+rasterio

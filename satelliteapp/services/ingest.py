@@ -4,6 +4,7 @@ import logging
 import zipfile
 from datetime import datetime
 
+from celery import current_app
 from django.db import transaction
 
 from notificationapp.services import send_pending_satellite_notifications
@@ -129,6 +130,15 @@ def _process_result_date(company_uuid, order_uuid, result_uuid, obs_date):
             created = sync_notifications_for_result(result_record)
             created_notification_ids.extend(notif.id for notif in created)
 
+    # Enqueue heavy TIFF -> PNG map-layer rendering AFTER commit (out of the txn).
+    # Sent by task name to avoid an ingest <-> tasks import cycle.
+    for result_record in created_results:
+        if result_record.tiff_url:
+            current_app.send_task(
+                "satelliteapp.render_result_map_layers",
+                args=[result_record.id],
+            )
+
     # Push AFTER commit (never send a push for a row that might roll back), and
     # only for notifications created this run whose farm is linked.
     if created_notification_ids:
@@ -176,6 +186,5 @@ def _extract_zip(zip_bytes, obs_date):
             logger.info(
                 "Uploaded tif field_uuid=%s observation_date=%s", field_uuid, obs_date
             )
-            # TODO(png): enqueue PNG map-layer rendering for this tif (Step 3h).
 
     return field_data, tif_urls
