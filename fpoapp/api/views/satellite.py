@@ -18,7 +18,7 @@ from farmerapp.api.serializers import FarmerSatelliteOverviewQuerySerializer
 from farmerapp.models import Farm, FarmCrop, FarmSatelliteSubscription, SatelliteSubscriptionStatus
 from farmerapp.services import (
     SatelliteServiceError,
-    fetch_farm_map_layers_by_external_ids,
+    fetch_farm_map_layers_by_farm_ids,
     fetch_satellite_metrics_by_farm_ids,
 )
 
@@ -262,12 +262,12 @@ class FPOSatelliteMapLayersView(BaseAPIView):
         observation_date = serializer.validated_data["observation_date"]
 
         farms = list(self.get_queryset(app_user.fpo_profile))
-        external_ids = [farm.id for farm in farms]
+        farm_ids = [farm.id for farm in farms]
 
         try:
-            satellite_layers = fetch_farm_map_layers_by_external_ids(
+            satellite_layers = fetch_farm_map_layers_by_farm_ids(
                 observation_date=observation_date.isoformat(),
-                external_ids=external_ids,
+                farm_ids=farm_ids,
             )
         except SatelliteServiceError as exc:
             return api_response(
@@ -278,13 +278,13 @@ class FPOSatelliteMapLayersView(BaseAPIView):
             )
 
         layers_by_farm_id = {
-            item["external_id"]: {
+            item["farm_id"]: {
                 key: value
                 for key, value in item.items()
-                if key != "external_id"
+                if key != "farm_id"
             }
             for item in satellite_layers.get("results", [])
-            if isinstance(item, dict) and item.get("external_id") is not None
+            if isinstance(item, dict) and item.get("farm_id") is not None
         }
 
         farmers = self.build_response_grouped_by_farmer(farms, layers_by_farm_id)
@@ -349,9 +349,9 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
         farm = get_object_or_404(self.get_queryset(app_user.fpo_profile), pk=farm_id)
 
         try:
-            satellite_layers = fetch_farm_map_layers_by_external_ids(
+            satellite_layers = fetch_farm_map_layers_by_farm_ids(
                 observation_date=observation_date.isoformat(),
-                external_ids=[farm.id],
+                farm_ids=[farm.id],
             )
         except SatelliteServiceError as exc:
             return api_response(
@@ -362,13 +362,13 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
             )
 
         layers_by_farm_id = {
-            item["external_id"]: {
+            item["farm_id"]: {
                 key: value
                 for key, value in item.items()
-                if key != "external_id"
+                if key != "farm_id"
             }
             for item in satellite_layers.get("results", [])
-            if isinstance(item, dict) and item.get("external_id") is not None
+            if isinstance(item, dict) and item.get("farm_id") is not None
         }
 
         crop = next(iter(farm.crops.all()), None)

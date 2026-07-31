@@ -10,11 +10,11 @@ from farmerapp.api.serializers import FarmerSatelliteOverviewQuerySerializer
 from farmerapp.services import (
     SatelliteServiceError,
     fetch_farm_charts,
-    fetch_farm_events_by_external_ids,
+    fetch_farm_events_by_farm_ids,
     fetch_farm_insights,
-    fetch_farm_map_layers_by_external_ids,
+    fetch_farm_map_layers_by_farm_ids,
     fetch_satellite_metrics_by_farm_ids,
-    fetch_satellite_results_by_external_id,
+    fetch_satellite_results_by_farm_id,
 )
 from django.db.models import Prefetch, OuterRef, Subquery
 
@@ -60,7 +60,7 @@ class FarmSatelliteResultsView(BaseAPIView):
             )
 
         try:
-            satellite_data = fetch_satellite_results_by_external_id(farm.id)
+            satellite_data = fetch_satellite_results_by_farm_id(farm.id)
         except SatelliteServiceError as exc:
             return api_response(
                 success=False,
@@ -135,7 +135,7 @@ class FarmSatelliteChartsView(BaseAPIView):
 
         try:
             charts_data = fetch_farm_charts(
-                external_id=farm.id,
+                farm_id=farm.id,
                 observation_date=observation_date.isoformat(),
             )
         except SatelliteServiceError as exc:
@@ -213,7 +213,7 @@ class FarmSatelliteInsightsView(BaseAPIView):
 
         try:
             insights = fetch_farm_insights(
-                external_id=farm.id,
+                farm_id=farm.id,
                 observation_date=observation_date.isoformat(),
             )
         except SatelliteServiceError as exc:
@@ -525,13 +525,13 @@ class FarmSatelliteEventsView(BaseAPIView):
         farm_items = self.build_farm_payload(farms)
 
         # Extract external IDs
-        external_ids = [farm["farm_id"] for farm in farm_items]
+        farm_ids = [farm["farm_id"] for farm in farm_items]
 
         # ✅ External satellite service call
         try:
-            satellite_events = fetch_farm_events_by_external_ids(
+            satellite_events = fetch_farm_events_by_farm_ids(
                 observation_date=observation_date.isoformat(),
-                external_ids=external_ids,
+                farm_ids=farm_ids,
             )
         except SatelliteServiceError as exc:
             return api_response(
@@ -618,12 +618,12 @@ class FarmerSatelliteMapLayersView(BaseAPIView):
         observation_date = serializer.validated_data["observation_date"]
 
         farms = list(self.get_queryset(app_user))
-        external_ids = [farm.id for farm in farms]
+        farm_ids = [farm.id for farm in farms]
 
         try:
-            satellite_layers = fetch_farm_map_layers_by_external_ids(
+            satellite_layers = fetch_farm_map_layers_by_farm_ids(
                 observation_date=observation_date.isoformat(),
-                external_ids=external_ids,
+                farm_ids=farm_ids,
             )
         except SatelliteServiceError as exc:
             return api_response(
@@ -634,13 +634,13 @@ class FarmerSatelliteMapLayersView(BaseAPIView):
             )
 
         layers_by_farm_id = {
-            item["external_id"]: {
+            item["farm_id"]: {
                 key: value
                 for key, value in item.items()
-                if key != "external_id"
+                if key != "farm_id"
             }
             for item in satellite_layers.get("results", [])
-            if isinstance(item, dict) and item.get("external_id") is not None
+            if isinstance(item, dict) and item.get("farm_id") is not None
         }
 
         return api_response(
