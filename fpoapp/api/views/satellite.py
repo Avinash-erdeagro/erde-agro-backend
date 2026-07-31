@@ -454,7 +454,7 @@ class FPOOverviewAPIView(BaseAPIView):
         crop_growth_alert_types = ["CROP_HEALTH_DROPPING"]
 
         alerts_qs = SatelliteFarmAlert.objects.filter(
-            farm__in=farms,
+            order_farm__farm__in=farms,
             observation_date=observation_date
         )
 

@@ -137,15 +137,15 @@ class FPOFarmerFilterStateView(FPOBaseAPIView):
 
         # Subquery alerts
         alerts_subquery = SatelliteFarmAlert.objects.filter(
-            farm__farmer__farmer_profile__registered_with_fpo=fpo_profile,
-            farm__farmer__farmer_profile__locality__state=OuterRef("locality__state"),
+            order_farm__farm__farmer__farmer_profile__registered_with_fpo=fpo_profile,
+            order_farm__farm__farmer__farmer_profile__locality__state=OuterRef("locality__state"),
             observation_date=observation_date
         )
 
         # Subquery notifications
         notifications_subquery = SatelliteFarmNotification.objects.filter(
-            farm__farmer__farmer_profile__registered_with_fpo=fpo_profile,
-            farm__farmer__farmer_profile__locality__state=OuterRef("locality__state"),
+            order_farm__farm__farmer__farmer_profile__registered_with_fpo=fpo_profile,
+            order_farm__farm__farmer__farmer_profile__locality__state=OuterRef("locality__state"),
             observation_date=observation_date
         )
 
@@ -202,17 +202,17 @@ class FPOFarmerDistrictListView(FPOBaseAPIView):
 
         # 🔹 Alerts subquery
         alerts_subquery = SatelliteFarmAlert.objects.filter(
-            farm__farmer__farmer_profile__registered_with_fpo=fpo_profile,
-            farm__farmer__farmer_profile__locality__district=OuterRef("locality__district"),
-            farm__farmer__farmer_profile__locality__state__iexact=state,
+            order_farm__farm__farmer__farmer_profile__registered_with_fpo=fpo_profile,
+            order_farm__farm__farmer__farmer_profile__locality__district=OuterRef("locality__district"),
+            order_farm__farm__farmer__farmer_profile__locality__state__iexact=state,
             observation_date=observation_date
         )
 
         # 🔹 Notifications subquery
         notifications_subquery = SatelliteFarmNotification.objects.filter(
-            farm__farmer__farmer_profile__registered_with_fpo=fpo_profile,
-            farm__farmer__farmer_profile__locality__district=OuterRef("locality__district"),
-            farm__farmer__farmer_profile__locality__state__iexact=state,
+            order_farm__farm__farmer__farmer_profile__registered_with_fpo=fpo_profile,
+            order_farm__farm__farmer__farmer_profile__locality__district=OuterRef("locality__district"),
+            order_farm__farm__farmer__farmer_profile__locality__state__iexact=state,
             observation_date=observation_date
         )
 
@@ -271,12 +271,12 @@ class FPOFarmerListByDistrictView(FPOBaseAPIView):
 
         # ✅ Subqueries (fast)
         alerts_subquery = SatelliteFarmAlert.objects.filter(
-            farm__farmer=OuterRef("app_user"),
+            order_farm__farm__farmer=OuterRef("app_user"),
             observation_date=observation_date
         )
 
         notifications_subquery = SatelliteFarmNotification.objects.filter(
-            farm__farmer=OuterRef("app_user"),
+            order_farm__farm__farmer=OuterRef("app_user"),
             observation_date=observation_date
         )
 
@@ -361,21 +361,19 @@ class FPOFarmerFarmsListView(FPOBaseAPIView):
                     queryset=FarmCrop.objects.filter(is_active=True).order_by("-plantation_date"),
                     to_attr="active_crops"
                 ),
-                # alerts
-                Prefetch(
-                    "satellite_alerts",
-                    queryset=SatelliteFarmAlert.objects.filter(
-                        observation_date=observation_date
-                    ),
-                    to_attr="alerts_for_date"
+            )
+            .annotate(
+                has_alert=Exists(
+                    SatelliteFarmAlert.objects.filter(
+                        order_farm__farm=OuterRef("pk"),
+                        observation_date=observation_date,
+                    )
                 ),
-                # notifications
-                Prefetch(
-                    "satellite_notifications",
-                    queryset=SatelliteFarmNotification.objects.filter(
-                        observation_date=observation_date
-                    ),
-                    to_attr="notifications_for_date"
+                has_notification=Exists(
+                    SatelliteFarmNotification.objects.filter(
+                        order_farm__farm=OuterRef("pk"),
+                        observation_date=observation_date,
+                    )
                 ),
             )
         )
@@ -400,8 +398,8 @@ class FPOFarmerFarmsListView(FPOBaseAPIView):
                 "area": farm.area,
                 "active_crop": active_crop,
                 "plantation_date": plantation_date,
-                "has_alert": bool(getattr(farm, "alerts_for_date", [])),
-                "has_notification": bool(getattr(farm, "notifications_for_date", [])),
+                "has_alert": farm.has_alert,
+                "has_notification": farm.has_notification,
             })
 
         return api_response(
