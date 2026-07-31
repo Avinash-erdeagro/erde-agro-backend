@@ -52,7 +52,7 @@ def _get_s3_client():
             "s3",
             region_name=settings.AWS_S3_REGION_NAME,
             aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_AC
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
         )
     return _s3_client
 
