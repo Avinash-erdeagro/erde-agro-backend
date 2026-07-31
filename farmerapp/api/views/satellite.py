@@ -13,7 +13,7 @@ from farmerapp.services import (
     fetch_farm_events_by_external_ids,
     fetch_farm_insights,
     fetch_farm_map_layers_by_external_ids,
-    fetch_satellite_metrics_by_external_ids,
+    fetch_satellite_metrics_by_farm_ids,
     fetch_satellite_results_by_external_id,
 )
 from django.db.models import Prefetch, OuterRef, Subquery
@@ -341,15 +341,12 @@ class FarmerSatelliteOverviewView(BaseAPIView):
             farm_payload["message"] = "Satellite data is not enabled for this farm."
             farm_groups["not_paid"].append(farm_payload)
 
-        satellite_response = {
-            "observation_date": observation_date.isoformat(),
-            "results": [],
-        }
+        metrics_by_farm_id = {}
         if syncing_farm_ids:
             try:
-                satellite_response = fetch_satellite_metrics_by_external_ids(
+                metrics_by_farm_id = fetch_satellite_metrics_by_farm_ids(
                     observation_date=observation_date.isoformat(),
-                    external_ids=syncing_farm_ids,
+                    farm_ids=syncing_farm_ids,
                 )
             except SatelliteServiceError as exc:
                 return api_response(
@@ -358,12 +355,6 @@ class FarmerSatelliteOverviewView(BaseAPIView):
                     result=None,
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
-
-        metrics_by_farm_id = {
-            item["external_id"]: item
-            for item in satellite_response.get("results", [])
-            if isinstance(item, dict) and item.get("external_id") is not None
-        }
 
         for farm_id in syncing_farm_ids:
             farm_payload = farms_by_id[farm_id]
@@ -395,9 +386,7 @@ class FarmerSatelliteOverviewView(BaseAPIView):
             success=True,
             message="Farmer satellite overview fetched successfully.",
             result={
-                "observation_date": satellite_response.get(
-                    "observation_date", observation_date.isoformat()
-                ),
+                "observation_date": observation_date.isoformat(),
                 "crop_overview": crop_overview,
                 "farms": {
                     "not_paid": {
