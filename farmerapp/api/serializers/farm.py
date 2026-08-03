@@ -43,12 +43,12 @@ class FarmCropSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         if instance.primary_crop_id:
-            rep["primary_crop"] = CropTypeSerializer(instance.primary_crop).data
+            rep["primary_crop"] = CropTypeSerializer(instance.primary_crop, context=self.context).data
         else:
             rep["primary_crop"] = {"id": None, "name": instance.custom_primary_crop_name}
         rep["primary_crop_variety"] = instance.primary_crop_variety or None
         if instance.intercrop_id:
-            rep["intercrop"] = CropTypeSerializer(instance.intercrop).data
+            rep["intercrop"] = CropTypeSerializer(instance.intercrop, context=self.context).data
         else:
             rep["intercrop"] = {"id": None, "name": instance.custom_intercrop_name} if instance.custom_intercrop_name else None
         rep["intercrop_variety"] = instance.intercrop_variety or None
@@ -76,8 +76,8 @@ class FarmSerializer(serializers.ModelSerializer):
         if instance.boundary:
             rep["boundary"] = json.loads(instance.boundary.geojson)
         rep["farmer"] = str(instance.farmer)
-        rep["soil_type"] = SoilTypeSerializer(instance.soil_type).data
-        rep["irrigation_type"] = IrrigationTypeSerializer(instance.irrigation_type).data
+        rep["soil_type"] = SoilTypeSerializer(instance.soil_type, context=self.context).data
+        rep["irrigation_type"] = IrrigationTypeSerializer(instance.irrigation_type, context=self.context).data
         return rep
 
     def validate(self, attrs):

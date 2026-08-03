@@ -56,7 +56,7 @@ class FPOFarmerListCreateView(FPOBaseAPIView):
             )
         )
 
-        serializer = FPOFarmerListSerializer(farmers, many=True)
+        serializer = FPOFarmerListSerializer(farmers, many=True, context={"request": request})
         return api_response(
             success=True,
             message="FPO farmers fetched successfully.",
@@ -387,7 +387,7 @@ class FPOFarmerFarmsListView(FPOBaseAPIView):
             if getattr(farm, "active_crops", []):
                 active = farm.active_crops[0]
                 if active.primary_crop_id:
-                    active_crop = CropTypeSerializer(active.primary_crop).data
+                    active_crop = CropTypeSerializer(active.primary_crop, context={"request": self.request}).data
                 else:
                     active_crop = {"id": None, "name": active.custom_primary_crop_name}
                 plantation_date = active.plantation_date
