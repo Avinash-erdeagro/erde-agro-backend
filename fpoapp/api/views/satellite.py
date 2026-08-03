@@ -1,3 +1,5 @@
+import json
+
 from django.db.models import Sum, Q, Count
 from satelliteapp.models import SatelliteFarmAlert
 from farmerapp.models import Farm, FarmCrop
@@ -209,7 +211,7 @@ class FPOSatelliteMapLayersView(BaseAPIView):
                 )
             )
             .filter(latest_subscription_status=SatelliteSubscriptionStatus.SYNCING)
-            .only("id", "farm_name", "area", "farmer")
+            .only("id", "farm_name", "area", "farmer", "boundary")
             .prefetch_related(Prefetch("crops", queryset=crop_queryset))
         )
 
@@ -230,6 +232,7 @@ class FPOSatelliteMapLayersView(BaseAPIView):
                     "farm_name": farm.farm_name,
                     "area": farm.area,
                     "crop_name": crop.primary_crop_name if crop else None,
+                    "boundary": json.loads(farm.boundary.geojson) if farm.boundary else None,
                     "observation_date": layers_result.get("observation_date"),
                     "layers": layers_result.get("layers", []),
                 }
@@ -325,7 +328,7 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
                 )
             )
             .filter(latest_subscription_status=SatelliteSubscriptionStatus.SYNCING)
-            .only("id", "farm_name", "area", "farmer")
+            .only("id", "farm_name", "area", "farmer", "boundary")
             .prefetch_related(Prefetch("crops", queryset=crop_queryset))
         )
 
@@ -382,6 +385,7 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
                 "farm_name": farm.farm_name,
                 "area": farm.area,
                 "crop_name": crop.primary_crop_name if crop else None,
+                "boundary": json.loads(farm.boundary.geojson) if farm.boundary else None,
                 "observation_date": layers_result.get(
                     "observation_date",
                     satellite_layers.get("observation_date", observation_date.isoformat()),

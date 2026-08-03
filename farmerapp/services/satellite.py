@@ -21,6 +21,22 @@ class SatelliteServiceError(Exception):
     pass
 
 
+# Band -> display name for the map-layers API. Only these bands are exposed;
+# bands 2 (Vegetation Cover), 11 (Variable Rate Irrigation) and 13 (Leaf
+# Temperature) are still rendered/stored but withheld from the API.
+API_MAP_LAYER_NAMES = {
+    3: "Soil Moisture",
+    4: "Leaf N",
+    5: "NDVI",
+    6: "Actual ET",
+    7: "Total Crop Growth",
+    8: "Crop Growth",
+    9: "Soil Water Potential",
+    10: "Moisture Status",
+    12: "Soil Temp Daily",
+}
+
+
 def _serialize_result(result):
     data_json = result.data_json or {}
     return {
@@ -292,7 +308,11 @@ def fetch_farm_map_layers_by_farm_ids(*, observation_date: str, farm_ids: list[i
 
     rows = (
         SatelliteMapLayer.objects
-        .filter(order_farm__farm_id__in=farm_ids, observation_date=obs_date)
+        .filter(
+            order_farm__farm_id__in=farm_ids,
+            observation_date=obs_date,
+            band_number__in=API_MAP_LAYER_NAMES,
+        )
         .order_by("order_farm__farm_id", "band_number")
         .values(
             "order_farm__farm_id", "band_number", "layer_name", "unit",
@@ -305,7 +325,7 @@ def fetch_farm_map_layers_by_farm_ids(*, observation_date: str, farm_ids: list[i
         farm_id = row["order_farm__farm_id"]
         layers_by_farm.setdefault(farm_id, []).append({
             "band_number": row["band_number"],
-            "layer_name": row["layer_name"],
+            "layer_name": API_MAP_LAYER_NAMES[row["band_number"]],
             "unit": row["unit"],
             "png_url": row["png_url"],
             "bounds": row["bounds"],
