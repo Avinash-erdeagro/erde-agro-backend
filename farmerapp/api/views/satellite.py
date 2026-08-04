@@ -276,6 +276,7 @@ class FarmerSatelliteOverviewView(BaseAPIView):
             .prefetch_related("crops", "crops__primary_crop", "satellite_subscriptions")
         )
 
+        language_code = getattr(request, "language_code", None)
         syncing_farm_ids = []
         farms_by_id = {}
         crop_summary = {}
@@ -293,7 +294,7 @@ class FarmerSatelliteOverviewView(BaseAPIView):
             if active_crop is None:
                 active_crop = next(iter(farm.crops.all()), None)
 
-            crop_name = active_crop.primary_crop_name if active_crop else None
+            crop_name = active_crop.primary_crop_localized_name(language_code) if active_crop else None
             subscription = next(iter(farm.satellite_subscriptions.all()), None)
 
             if crop_name:
@@ -483,7 +484,7 @@ class FarmSatelliteEventsView(BaseAPIView):
             )
         )
 
-    def build_farm_payload(self, farms):
+    def build_farm_payload(self, farms, language_code=None):
         """
         Step 3:
         Build response payload efficiently
@@ -499,7 +500,7 @@ class FarmSatelliteEventsView(BaseAPIView):
                     "farm_id": farm.id,
                     "farm_name": farm.farm_name,
                     "area": farm.area,
-                    "crop_name": crop.primary_crop_name if crop else None,
+                    "crop_name": crop.primary_crop_localized_name(language_code) if crop else None,
                 }
             )
 
@@ -534,7 +535,9 @@ class FarmSatelliteEventsView(BaseAPIView):
         farms = list(queryset)
 
         # ✅ Build farm data
-        farm_items = self.build_farm_payload(farms)
+        farm_items = self.build_farm_payload(
+            farms, language_code=getattr(request, "language_code", None)
+        )
 
         # Extract external IDs
         farm_ids = [farm["farm_id"] for farm in farm_items]
@@ -593,7 +596,7 @@ class FarmerSatelliteMapLayersView(BaseAPIView):
             .prefetch_related(Prefetch("crops", queryset=crop_queryset))
         )
 
-    def build_farm_payload(self, farms, layers_by_farm_id):
+    def build_farm_payload(self, farms, layers_by_farm_id, language_code=None):
         farm_items = []
 
         for farm in farms:
@@ -605,7 +608,7 @@ class FarmerSatelliteMapLayersView(BaseAPIView):
                     "farm_id": farm.id,
                     "farm_name": farm.farm_name,
                     "area": farm.area,
-                    "crop_name": crop.primary_crop_name if crop else None,
+                    "crop_name": crop.primary_crop_localized_name(language_code) if crop else None,
                     "boundary": json.loads(farm.boundary.geojson) if farm.boundary else None,
                     "observation_date": layers_result.get("observation_date"),
                     "layers": layers_result.get("layers", []),
@@ -666,7 +669,10 @@ class FarmerSatelliteMapLayersView(BaseAPIView):
                     observation_date.isoformat(),
                 ),
                 "farms_count": len(farms),
-                "farms": self.build_farm_payload(farms, layers_by_farm_id),
+                "farms": self.build_farm_payload(
+                    farms, layers_by_farm_id,
+                    language_code=getattr(request, "language_code", None),
+                ),
             },
             status_code=status.HTTP_200_OK,
         )

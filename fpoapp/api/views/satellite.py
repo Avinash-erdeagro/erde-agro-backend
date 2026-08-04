@@ -62,6 +62,8 @@ class FPOSatelliteOverviewView(BaseAPIView):
             "active": [],
         }
 
+        language_code = getattr(request, "language_code", None)
+
         for farm in farms:
             active_crop = next(
                 (crop for crop in farm.crops.all() if crop.is_active),
@@ -70,7 +72,7 @@ class FPOSatelliteOverviewView(BaseAPIView):
             if active_crop is None:
                 active_crop = next(iter(farm.crops.all()), None)
 
-            crop_name = active_crop.primary_crop_name if active_crop else None
+            crop_name = active_crop.primary_crop_localized_name(language_code) if active_crop else None
             subscription = next(iter(farm.satellite_subscriptions.all()), None)
 
             if crop_name:
@@ -221,7 +223,7 @@ class FPOSatelliteMapLayersView(BaseAPIView):
             .prefetch_related(Prefetch("crops", queryset=crop_queryset))
         )
 
-    def build_response_grouped_by_farmer(self, farms, layers_by_farm_id):
+    def build_response_grouped_by_farmer(self, farms, layers_by_farm_id, language_code=None):
         farmers_map = defaultdict(lambda: {"farmer_name": None, "farms": []})
 
         for farm in farms:
@@ -237,7 +239,7 @@ class FPOSatelliteMapLayersView(BaseAPIView):
                     "farm_id": farm.id,
                     "farm_name": farm.farm_name,
                     "area": farm.area,
-                    "crop_name": crop.primary_crop_name if crop else None,
+                    "crop_name": crop.primary_crop_localized_name(language_code) if crop else None,
                     "boundary": json.loads(farm.boundary.geojson) if farm.boundary else None,
                     "observation_date": layers_result.get("observation_date"),
                     "layers": layers_result.get("layers", []),
@@ -296,7 +298,10 @@ class FPOSatelliteMapLayersView(BaseAPIView):
             if isinstance(item, dict) and item.get("farm_id") is not None
         }
 
-        farmers = self.build_response_grouped_by_farmer(farms, layers_by_farm_id)
+        farmers = self.build_response_grouped_by_farmer(
+            farms, layers_by_farm_id,
+            language_code=getattr(request, "language_code", None),
+        )
 
         return api_response(
             success=True,
@@ -390,7 +395,7 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
                 "farm_id": farm.id,
                 "farm_name": farm.farm_name,
                 "area": farm.area,
-                "crop_name": crop.primary_crop_name if crop else None,
+                "crop_name": crop.primary_crop_localized_name(getattr(request, "language_code", None)) if crop else None,
                 "boundary": json.loads(farm.boundary.geojson) if farm.boundary else None,
                 "observation_date": layers_result.get(
                     "observation_date",
@@ -445,12 +450,18 @@ class FPOOverviewAPIView(BaseAPIView):
         total_area = farms.aggregate(total_area=Sum("area"))['total_area'] or 0.0
 
         # Crop-wise area
+        language_code = getattr(request, "language_code", None)
+        crop_name_field = (
+            f"primary_crop__name_{language_code}"
+            if language_code and language_code != "en"
+            else "primary_crop__name"
+        )
         crop_areas = (
             FarmCrop.objects.filter(
                 farm__in=farms,
                 is_active=True
             )
-            .values("primary_crop__name", "custom_primary_crop_name")
+            .values(crop_name_field, "primary_crop__name", "custom_primary_crop_name")
             .annotate(total_area=Sum("farm__area"), farms_count=Count("farm", distinct=True))
             .order_by("primary_crop__name")
         )
@@ -480,7 +491,7 @@ class FPOOverviewAPIView(BaseAPIView):
                 "total_area": round(total_area, 2),
                 "crops": [
                     {
-                        "crop_name": c["primary_crop__name"] or c["custom_primary_crop_name"],
+                        "crop_name": c.get(crop_name_field) or c["primary_crop__name"] or c["custom_primary_crop_name"],
                         "total_area": round(c["total_area"] or 0, 2),
                         "farms_count": c["farms_count"]
                     }
