@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
 from authapp.api.responses import api_response
+from authapp.api.response_codes import ResponseCode
 from authapp.api.views.base import BaseAPIView
 from authapp.models import AppUser
 from farmerapp.models import Farm, SatelliteSubscriptionStatus, FarmCrop, FarmSatelliteSubscription
@@ -49,6 +50,7 @@ class FarmSatelliteResultsView(BaseAPIView):
             return api_response(
                 success=False,
                 message="You are not subscribed to satellite services for this farm",
+                code=ResponseCode.SATELLITE_NOT_SUBSCRIBED,
                 result=None,
                 status_code=status.HTTP_404_NOT_FOUND,
             )
@@ -56,7 +58,7 @@ class FarmSatelliteResultsView(BaseAPIView):
         if subscription.status == SatelliteSubscriptionStatus.PAID:
             return api_response(
                 success=False,
-                message="You will receive satellite data within 7 working days. Please check back later",
+                message="You will receive satellite data within 7 working days. Please check back later", code=ResponseCode.SATELLITE_DATA_PENDING,
                 result=None,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
@@ -66,14 +68,14 @@ class FarmSatelliteResultsView(BaseAPIView):
         except SatelliteServiceError as exc:
             return api_response(
                 success=False,
-                message=str(exc),
+                message=str(exc), code=getattr(exc, "code", ResponseCode.SATELLITE_ERROR),
                 result=None,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         return api_response(
             success=True,
-            message="Satellite data fetched successfully.",
+            message="Satellite data fetched successfully.", code=ResponseCode.SATELLITE_DATA_FETCHED,
             result={
                 "farm_id": farm.id,
                 "subscription": {
@@ -123,6 +125,7 @@ class FarmSatelliteChartsView(BaseAPIView):
             return api_response(
                 success=False,
                 message="You are not subscribed to satellite services for this farm",
+                code=ResponseCode.SATELLITE_NOT_SUBSCRIBED,
                 result=None,
                 status_code=status.HTTP_404_NOT_FOUND,
             )
@@ -130,7 +133,7 @@ class FarmSatelliteChartsView(BaseAPIView):
         if subscription.status == SatelliteSubscriptionStatus.PAID:
             return api_response(
                 success=False,
-                message="You will receive satellite data within 7 working days. Please check back later",
+                message="You will receive satellite data within 7 working days. Please check back later", code=ResponseCode.SATELLITE_DATA_PENDING,
                 result=None,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
@@ -143,14 +146,14 @@ class FarmSatelliteChartsView(BaseAPIView):
         except SatelliteServiceError as exc:
             return api_response(
                 success=False,
-                message=str(exc),
+                message=str(exc), code=getattr(exc, "code", ResponseCode.SATELLITE_ERROR),
                 result=None,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         return api_response(
             success=True,
-            message="Farm charts fetched successfully.",
+            message="Farm charts fetched successfully.", code=ResponseCode.SATELLITE_CHARTS_FETCHED,
             result={
                 "farm_id": farm.id,
                 "observation_date": observation_date.isoformat(),
@@ -201,6 +204,7 @@ class FarmSatelliteInsightsView(BaseAPIView):
             return api_response(
                 success=False,
                 message="You are not subscribed to satellite services for this farm",
+                code=ResponseCode.SATELLITE_NOT_SUBSCRIBED,
                 result=None,
                 status_code=status.HTTP_404_NOT_FOUND,
             )
@@ -208,7 +212,7 @@ class FarmSatelliteInsightsView(BaseAPIView):
         if subscription.status == SatelliteSubscriptionStatus.PAID:
             return api_response(
                 success=False,
-                message="You will receive satellite data within 7 working days. Please check back later",
+                message="You will receive satellite data within 7 working days. Please check back later", code=ResponseCode.SATELLITE_DATA_PENDING,
                 result=None,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
@@ -221,14 +225,14 @@ class FarmSatelliteInsightsView(BaseAPIView):
         except SatelliteServiceError as exc:
             return api_response(
                 success=False,
-                message=str(exc),
+                message=str(exc), code=getattr(exc, "code", ResponseCode.SATELLITE_ERROR),
                 result=None,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         return api_response(
             success=True,
-            message="Farm insights fetched successfully.",
+            message="Farm insights fetched successfully.", code=ResponseCode.SATELLITE_INSIGHTS_FETCHED,
             result={
                 "farm_id": farm.id,
                 "observation_date": observation_date.isoformat(),
@@ -254,7 +258,7 @@ class FarmerSatelliteOverviewView(BaseAPIView):
         if app_user.role != "FARMER":
             return api_response(
                 success=False,
-                message="This API is available only for farmer users.",
+                message="This API is available only for farmer users.", code=ResponseCode.FARMER_ONLY,
                 result=None,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
@@ -322,6 +326,7 @@ class FarmerSatelliteOverviewView(BaseAPIView):
 
             if subscription is None:
                 farm_payload["message"] = "Satellite data is not enabled for this farm."
+                farm_payload["code"] = ResponseCode.SATELLITE_NOT_ENABLED
                 farm_groups["not_paid"].append(farm_payload)
                 continue
 
@@ -332,6 +337,7 @@ class FarmerSatelliteOverviewView(BaseAPIView):
                 farm_payload["message"] = (
                     "Satellite data subscription is active, but data is not available yet."
                 )
+                farm_payload["code"] = ResponseCode.SATELLITE_AWAITING_DATA
                 farm_groups["awaiting_data"].append(farm_payload)
                 continue
 
@@ -341,6 +347,7 @@ class FarmerSatelliteOverviewView(BaseAPIView):
                 continue
 
             farm_payload["message"] = "Satellite data is not enabled for this farm."
+            farm_payload["code"] = ResponseCode.SATELLITE_NOT_ENABLED
             farm_groups["not_paid"].append(farm_payload)
 
         metrics_by_farm_id = {}
@@ -353,7 +360,7 @@ class FarmerSatelliteOverviewView(BaseAPIView):
             except SatelliteServiceError as exc:
                 return api_response(
                     success=False,
-                    message=str(exc),
+                    message=str(exc), code=getattr(exc, "code", ResponseCode.SATELLITE_ERROR),
                     result=None,
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
@@ -366,10 +373,12 @@ class FarmerSatelliteOverviewView(BaseAPIView):
                 farm_payload["soil_moisture"] = metric.get("soil_moisture")
                 farm_payload["crop_growth"] = metric.get("crop_growth")
                 farm_payload["message"] = None
+                farm_payload["code"] = None
             else:
                 farm_payload["message"] = (
                     "This date's data is not currently available. Please choose an earlier date."
                 )
+                farm_payload["code"] = ResponseCode.SATELLITE_DATE_UNAVAILABLE
 
             farm_groups["active"].append(farm_payload)
 
@@ -386,7 +395,7 @@ class FarmerSatelliteOverviewView(BaseAPIView):
 
         return api_response(
             success=True,
-            message="Farmer satellite overview fetched successfully.",
+            message="Farmer satellite overview fetched successfully.", code=ResponseCode.SATELLITE_OVERVIEW_FETCHED,
             result={
                 "observation_date": observation_date.isoformat(),
                 "crop_overview": crop_overview,
@@ -502,7 +511,7 @@ class FarmSatelliteEventsView(BaseAPIView):
         if app_user.role not in (AppUser.Role.FARMER, AppUser.Role.FPO):
             return api_response(
                 success=False,
-                message="This API is available only for farmer and FPO users.",
+                message="This API is available only for farmer and FPO users.", code=ResponseCode.FARMER_OR_FPO_ONLY,
                 result=None,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
@@ -538,7 +547,7 @@ class FarmSatelliteEventsView(BaseAPIView):
         except SatelliteServiceError as exc:
             return api_response(
                 success=False,
-                message=str(exc),
+                message=str(exc), code=getattr(exc, "code", ResponseCode.SATELLITE_ERROR),
                 result=None,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
@@ -546,7 +555,7 @@ class FarmSatelliteEventsView(BaseAPIView):
         # ✅ Final response
         return api_response(
             success=True,
-            message="Farm satellite events fetched successfully.",
+            message="Farm satellite events fetched successfully.", code=ResponseCode.SATELLITE_EVENTS_FETCHED,
             result={
                 "observation_date": satellite_events.get(
                     "observation_date",
@@ -609,7 +618,7 @@ class FarmerSatelliteMapLayersView(BaseAPIView):
         if app_user.role != AppUser.Role.FARMER:
             return api_response(
                 success=False,
-                message="This API is available only for farmer users.",
+                message="This API is available only for farmer users.", code=ResponseCode.FARMER_ONLY,
                 result=None,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
@@ -631,7 +640,7 @@ class FarmerSatelliteMapLayersView(BaseAPIView):
         except SatelliteServiceError as exc:
             return api_response(
                 success=False,
-                message=str(exc),
+                message=str(exc), code=getattr(exc, "code", ResponseCode.SATELLITE_ERROR),
                 result=None,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
@@ -648,7 +657,7 @@ class FarmerSatelliteMapLayersView(BaseAPIView):
 
         return api_response(
             success=True,
-            message="Farmer farm map layers fetched successfully.",
+            message="Farmer farm map layers fetched successfully.", code=ResponseCode.SATELLITE_MAP_LAYERS_FETCHED,
             result={
                 "observation_date": satellite_layers.get(
                     "observation_date",

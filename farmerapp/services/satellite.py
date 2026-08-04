@@ -15,10 +15,16 @@ from satelliteapp.services.metrics import (
 )
 from satelliteapp.services.utils import to_float
 from farmerapp.utils import previous_day
+from authapp.api.response_codes import ResponseCode
 
 
 class SatelliteServiceError(Exception):
-    pass
+    """Business error surfaced to the API. Carries a stable ``code`` so views
+    can pass it through even though they only see ``str(exc)``."""
+
+    def __init__(self, message, code=ResponseCode.SATELLITE_ERROR):
+        super().__init__(message)
+        self.code = code
 
 
 # Band -> display name for the map-layers API. Only these bands are exposed;
@@ -119,7 +125,10 @@ def fetch_farm_insights(*, farm_id: int, observation_date: str):
     )
 
     if result is None:
-        raise SatelliteServiceError("Farm insights not found for this farm and date.")
+        raise SatelliteServiceError(
+            "Farm insights not found for this farm and date.",
+            code=ResponseCode.SATELLITE_INSIGHTS_NOT_FOUND,
+        )
 
     data_json = result.data_json or {}
     soil_moisture = calculate_soil_moisture(data_json)
@@ -277,7 +286,10 @@ def fetch_farm_charts(*, farm_id: int, observation_date: str):
     )
 
     if not rows:
-        raise SatelliteServiceError("Farm charts not found for this farm and date.")
+        raise SatelliteServiceError(
+            "Farm charts not found for this farm and date.",
+            code=ResponseCode.SATELLITE_CHARTS_NOT_FOUND,
+        )
 
     charts = []
     for chart_def in CHART_DEFINITIONS:

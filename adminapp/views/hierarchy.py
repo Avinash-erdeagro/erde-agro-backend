@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 
 from authapp.api.permissions import IsSuperAdmin
 from authapp.api.responses import api_response
+from authapp.api.response_codes import ResponseCode
 from authapp.models import AppUser
 from authapp.models.hierarchy import (
     HierarchyLevel,
@@ -178,7 +179,7 @@ class AdminUserCreateView(APIView):
         if not serializer.is_valid():
             return api_response(
                 success=False,
-                message="Invalid data.",
+                message="Invalid data.", code=ResponseCode.INVALID_DATA,
                 result=serializer.errors,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
@@ -194,7 +195,7 @@ class AdminUserCreateView(APIView):
 
         return api_response(
             success=True,
-            message=f"{role} account created successfully.",
+            message=f"{role} account created successfully.", code=ResponseCode.ACCOUNT_CREATED,
             result={
                 "id": app_user.pk,
                 "username": app_user.user.username,

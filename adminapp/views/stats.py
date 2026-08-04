@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 
 from authapp.api.permissions import IsSuperAdmin
 from authapp.api.responses import api_response
+from authapp.api.response_codes import ResponseCode
 from authapp.models import AppUser, FarmerProfile, FpoProfile
 from authapp.models.hierarchy import OrgMembership, OrgUnit, OrgUnitFPO, Organization
 from billingapp.models import SatellitePlan
@@ -68,7 +69,7 @@ class PlatformOverviewStatsView(APIView):
 
         return api_response(
             success=True,
-            message="Platform overview stats.",
+            message="Platform overview stats.", code=ResponseCode.PLATFORM_STATS,
             result={
                 "users": {
                     "super_admin": users_by_role.get("SUPER_ADMIN", 0),
@@ -141,6 +142,6 @@ class FPOStatsView(APIView):
 
         return api_response(
             success=True,
-            message="FPO stats.",
+            message="FPO stats.", code=ResponseCode.FPO_STATS,
             result=result,
         )

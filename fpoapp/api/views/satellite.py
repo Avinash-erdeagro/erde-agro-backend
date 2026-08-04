@@ -14,6 +14,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
 from authapp.api.responses import api_response
+from authapp.api.response_codes import ResponseCode
 from authapp.api.views.base import BaseAPIView
 from authapp.models import AppUser
 from farmerapp.api.serializers import FarmerSatelliteOverviewQuerySerializer
@@ -33,7 +34,7 @@ class FPOSatelliteOverviewView(BaseAPIView):
         if app_user.role != AppUser.Role.FPO:
             return api_response(
                 success=False,
-                message="This API is available only for FPO users.",
+                message="This API is available only for FPO users.", code=ResponseCode.FPO_ONLY,
                 result=None,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
@@ -103,6 +104,7 @@ class FPOSatelliteOverviewView(BaseAPIView):
 
             if subscription is None:
                 farm_payload["message"] = "Satellite data is not enabled for this farm."
+                farm_payload["code"] = ResponseCode.SATELLITE_NOT_ENABLED
                 farm_groups["not_paid"].append(farm_payload)
                 continue
 
@@ -113,6 +115,7 @@ class FPOSatelliteOverviewView(BaseAPIView):
                 farm_payload["message"] = (
                     "Satellite data subscription is active, but data is not available yet."
                 )
+                farm_payload["code"] = ResponseCode.SATELLITE_AWAITING_DATA
                 farm_groups["awaiting_data"].append(farm_payload)
                 continue
 
@@ -122,6 +125,7 @@ class FPOSatelliteOverviewView(BaseAPIView):
                 continue
 
             farm_payload["message"] = "Satellite data is not enabled for this farm."
+            farm_payload["code"] = ResponseCode.SATELLITE_NOT_ENABLED
             farm_groups["not_paid"].append(farm_payload)
 
         metrics_by_farm_id = {}
@@ -134,7 +138,7 @@ class FPOSatelliteOverviewView(BaseAPIView):
             except SatelliteServiceError as exc:
                 return api_response(
                     success=False,
-                    message=str(exc),
+                    message=str(exc), code=getattr(exc, "code", ResponseCode.SATELLITE_ERROR),
                     result=None,
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
@@ -147,10 +151,12 @@ class FPOSatelliteOverviewView(BaseAPIView):
                 farm_payload["soil_moisture"] = metric.get("soil_moisture")
                 farm_payload["crop_growth"] = metric.get("crop_growth")
                 farm_payload["message"] = None
+                farm_payload["code"] = None
             else:
                 farm_payload["message"] = (
                     "This date's data is not currently available. Please choose an earlier date."
                 )
+                farm_payload["code"] = ResponseCode.SATELLITE_DATE_UNAVAILABLE
 
             farm_groups["active"].append(farm_payload)
 
@@ -167,7 +173,7 @@ class FPOSatelliteOverviewView(BaseAPIView):
 
         return api_response(
             success=True,
-            message="FPO satellite overview fetched successfully.",
+            message="FPO satellite overview fetched successfully.", code=ResponseCode.SATELLITE_OVERVIEW_FETCHED,
             result={
                 "observation_date": observation_date.isoformat(),
                 "crop_overview": crop_overview,
@@ -253,7 +259,7 @@ class FPOSatelliteMapLayersView(BaseAPIView):
         if app_user.role != AppUser.Role.FPO:
             return api_response(
                 success=False,
-                message="This API is available only for FPO users.",
+                message="This API is available only for FPO users.", code=ResponseCode.FPO_ONLY,
                 result=None,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
@@ -275,7 +281,7 @@ class FPOSatelliteMapLayersView(BaseAPIView):
         except SatelliteServiceError as exc:
             return api_response(
                 success=False,
-                message=str(exc),
+                message=str(exc), code=getattr(exc, "code", ResponseCode.SATELLITE_ERROR),
                 result=None,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
@@ -294,7 +300,7 @@ class FPOSatelliteMapLayersView(BaseAPIView):
 
         return api_response(
             success=True,
-            message="FPO farm map layers fetched successfully.",
+            message="FPO farm map layers fetched successfully.", code=ResponseCode.SATELLITE_MAP_LAYERS_FETCHED,
             result={
                 "observation_date": satellite_layers.get(
                     "observation_date",
@@ -338,7 +344,7 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
         if app_user.role != AppUser.Role.FPO:
             return api_response(
                 success=False,
-                message="This API is available only for FPO users.",
+                message="This API is available only for FPO users.", code=ResponseCode.FPO_ONLY,
                 result=None,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
@@ -359,7 +365,7 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
         except SatelliteServiceError as exc:
             return api_response(
                 success=False,
-                message=str(exc),
+                message=str(exc), code=getattr(exc, "code", ResponseCode.SATELLITE_ERROR),
                 result=None,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
@@ -379,7 +385,7 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
 
         return api_response(
             success=True,
-            message="FPO farm map layers fetched successfully.",
+            message="FPO farm map layers fetched successfully.", code=ResponseCode.SATELLITE_MAP_LAYERS_FETCHED,
             result={
                 "farm_id": farm.id,
                 "farm_name": farm.farm_name,
@@ -404,23 +410,23 @@ class FPOOverviewAPIView(BaseAPIView):
         if app_user.role != AppUser.Role.FPO:
             return api_response(
                 success=False,
-                message="This API is available only for FPO users.",
+                message="This API is available only for FPO users.", code=ResponseCode.FPO_ONLY,
                 result=None,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
 
         fpo_profile = getattr(app_user, "fpo_profile", None)
         if not fpo_profile:
-            return api_response(False, "No FPO profile found.", None, 403)
+            return api_response(success=False, message="No FPO profile found.", result=None, status_code=403, code=ResponseCode.FPO_PROFILE_NOT_FOUND)
 
         observation_date = request.query_params.get("observation_date")
         if not observation_date:
-            return api_response(False, "observation_date is required (YYYY-MM-DD)", None, 400)
+            return api_response(success=False, message="observation_date is required (YYYY-MM-DD)", result=None, status_code=400, code=ResponseCode.OBSERVATION_DATE_REQUIRED)
         try:
             parsed_date = datetime.strptime(observation_date, "%Y-%m-%d").date()
             observation_date = parsed_date - timedelta(days=1)
         except ValueError:
-            return api_response(False, "Invalid observation_date format. Use YYYY-MM-DD", None, 400)
+            return api_response(success=False, message="Invalid observation_date format. Use YYYY-MM-DD", result=None, status_code=400, code=ResponseCode.OBSERVATION_DATE_INVALID)
 
 
         # Optional filters
@@ -468,7 +474,7 @@ class FPOOverviewAPIView(BaseAPIView):
 
         return api_response(
             success=True,
-            message="FPO Overview fetched successfully.",
+            message="FPO Overview fetched successfully.", code=ResponseCode.FPO_OVERVIEW_FETCHED,
             result={
                 "observation_date": observation_date,
                 "total_area": round(total_area, 2),

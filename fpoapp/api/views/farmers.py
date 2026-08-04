@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
 from authapp.api.responses import api_response
+from authapp.api.response_codes import ResponseCode
 from authapp.api.views.base import BaseAPIView
 from authapp.models import AppUser, FarmerProfile, FpoProfile
 from fpoapp.api.serializers import (
@@ -30,7 +31,7 @@ class FPOBaseAPIView(BaseAPIView):
         if not fpo_profile:
             return api_response(
                 success=False,
-                message="This API is available only for FPO users.",
+                message="This API is available only for FPO users.", code=ResponseCode.FPO_ONLY,
                 result=None,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
@@ -59,7 +60,7 @@ class FPOFarmerListCreateView(FPOBaseAPIView):
         serializer = FPOFarmerListSerializer(farmers, many=True, context={"request": request})
         return api_response(
             success=True,
-            message="FPO farmers fetched successfully.",
+            message="FPO farmers fetched successfully.", code=ResponseCode.FPO_FARMERS_FETCHED,
             result={"farmers": serializer.data},
             status_code=status.HTTP_200_OK,
         )
@@ -80,7 +81,7 @@ class FPOFarmerListCreateView(FPOBaseAPIView):
 
         return api_response(
             success=True,
-            message="Farmer created successfully under the FPO.",
+            message="Farmer created successfully under the FPO.", code=ResponseCode.FARMER_CREATED,
             result=response_serializer.data,
             status_code=status.HTTP_201_CREATED,
         )
@@ -99,7 +100,7 @@ class FPOFarmerContactListView(FPOBaseAPIView):
         serializer = FPOFarmerContactListSerializer(farmers, many=True)
         return api_response(
             success=True,
-            message="FPO farmer contacts fetched successfully.",
+            message="FPO farmer contacts fetched successfully.", code=ResponseCode.FPO_FARMER_CONTACTS_FETCHED,
             result={"farmers": serializer.data},
             status_code=status.HTTP_200_OK,
         )
@@ -117,7 +118,7 @@ class FPOFarmerFilterStateView(FPOBaseAPIView):
         if not observation_date:
             return api_response(
                 success=False,
-                message="observation_date is required (YYYY-MM-DD)",
+                message="observation_date is required (YYYY-MM-DD)", code=ResponseCode.OBSERVATION_DATE_REQUIRED,
                 result=None,
                 status_code=400,
             )
@@ -130,7 +131,7 @@ class FPOFarmerFilterStateView(FPOBaseAPIView):
         except ValueError:
             return api_response(
                 success=False,
-                message="Invalid observation_date format. Use YYYY-MM-DD",
+                message="Invalid observation_date format. Use YYYY-MM-DD", code=ResponseCode.OBSERVATION_DATE_INVALID,
                 result=None,
                 status_code=400,
             )
@@ -168,7 +169,7 @@ class FPOFarmerFilterStateView(FPOBaseAPIView):
 
         return api_response(
             success=True,
-            message="States with farmer counts and alerts.",
+            message="States with farmer counts and alerts.", code=ResponseCode.FILTER_STATES,
             result={"states": list(states)},
             status_code=200,
         )
@@ -186,7 +187,7 @@ class FPOFarmerDistrictListView(FPOBaseAPIView):
         if not observation_date:
             return api_response(
                 success=False,
-                message="observation_date is required (YYYY-MM-DD)",
+                message="observation_date is required (YYYY-MM-DD)", code=ResponseCode.OBSERVATION_DATE_REQUIRED,
                 result=None,
                 status_code=400,
             )
@@ -198,7 +199,7 @@ class FPOFarmerDistrictListView(FPOBaseAPIView):
             observation_date = parsed_date - timedelta(days=1)
 
         except ValueError:
-            return api_response(False, "Invalid date format", None, 400)
+            return api_response(success=False, message="Invalid date format", result=None, status_code=400, code=ResponseCode.OBSERVATION_DATE_INVALID)
 
         # 🔹 Alerts subquery
         alerts_subquery = SatelliteFarmAlert.objects.filter(
@@ -235,7 +236,7 @@ class FPOFarmerDistrictListView(FPOBaseAPIView):
 
         return api_response(
             success=True,
-            message=f"Districts in state '{state}'.",
+            message=f"Districts in state '{state}'.", code=ResponseCode.DISTRICTS_IN_STATE,
             result={"districts": list(districts)},
             status_code=200,
         )
@@ -253,7 +254,7 @@ class FPOFarmerListByDistrictView(FPOBaseAPIView):
         if not observation_date:
             return api_response(
                 success=False,
-                message="observation_date is required (YYYY-MM-DD)",
+                message="observation_date is required (YYYY-MM-DD)", code=ResponseCode.OBSERVATION_DATE_REQUIRED,
                 result=None,
                 status_code=400,
             )
@@ -264,7 +265,7 @@ class FPOFarmerListByDistrictView(FPOBaseAPIView):
         except ValueError:
             return api_response(
                 success=False,
-                message="Invalid observation_date format",
+                message="Invalid observation_date format", code=ResponseCode.OBSERVATION_DATE_INVALID,
                 result=None,
                 status_code=400,
             )
@@ -304,7 +305,7 @@ class FPOFarmerListByDistrictView(FPOBaseAPIView):
 
         return api_response(
             success=True,
-            message=f"Farmers in '{district}', '{state}'",
+            message=f"Farmers in '{district}', '{state}'", code=ResponseCode.FARMERS_IN_DISTRICT,
             result={"farmers": list(farmers)},
             status_code=200,
         )
@@ -322,7 +323,7 @@ class FPOFarmerFarmsListView(FPOBaseAPIView):
         if not observation_date:
             return api_response(
                 success=False,
-                message="observation_date is required (YYYY-MM-DD)",
+                message="observation_date is required (YYYY-MM-DD)", code=ResponseCode.OBSERVATION_DATE_REQUIRED,
                 result=None,
                 status_code=400,
             )
@@ -333,7 +334,7 @@ class FPOFarmerFarmsListView(FPOBaseAPIView):
         except ValueError:
             return api_response(
                 success=False,
-                message="Invalid observation_date format",
+                message="Invalid observation_date format", code=ResponseCode.OBSERVATION_DATE_INVALID,
                 result=None,
                 status_code=400,
             )
@@ -346,7 +347,7 @@ class FPOFarmerFarmsListView(FPOBaseAPIView):
         except FarmerProfile.DoesNotExist:
             return api_response(
                 success=False,
-                message="Farmer not found or not registered under this FPO.",
+                message="Farmer not found or not registered under this FPO.", code=ResponseCode.FARMER_NOT_IN_FPO,
                 result=None,
                 status_code=404,
             )
@@ -404,7 +405,7 @@ class FPOFarmerFarmsListView(FPOBaseAPIView):
 
         return api_response(
             success=True,
-            message=f"Farms for farmer id {farmer_id}.",
+            message=f"Farms for farmer id {farmer_id}.", code=ResponseCode.FARMS_FOR_FARMER,
             result={"farms": farm_list},
             status_code=200,
         )

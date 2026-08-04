@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 
 from authapp.api.permissions import IsSuperAdminOrOrgUser
 from authapp.api.responses import api_response
+from authapp.api.response_codes import ResponseCode
 from authapp.models import AppUser
 from authapp.models.hierarchy import HierarchyLevel, OrgUnit
 from authapp.services.hierarchy import (
@@ -39,7 +40,7 @@ class ImpersonateUserView(APIView):
         if requester_app_user is None:
             return api_response(
                 success=False,
-                message="Requester has no AppUser profile.",
+                message="Requester has no AppUser profile.", code=ResponseCode.NO_APPUSER_PROFILE,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
 
@@ -51,7 +52,7 @@ class ImpersonateUserView(APIView):
         if target_app_user is None:
             return api_response(
                 success=False,
-                message="Target user not found.",
+                message="Target user not found.", code=ResponseCode.TARGET_USER_NOT_FOUND,
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
@@ -60,13 +61,13 @@ class ImpersonateUserView(APIView):
         except PermissionError as exc:
             return api_response(
                 success=False,
-                message=str(exc),
+                message=str(exc), code=getattr(exc, "code", ResponseCode.ERROR),
                 status_code=status.HTTP_403_FORBIDDEN,
             )
 
         return api_response(
             success=True,
-            message="Impersonation token issued.",
+            message="Impersonation token issued.", code=ResponseCode.IMPERSONATION_TOKEN_ISSUED,
             result=token_data,
             status_code=status.HTTP_200_OK,
         )
@@ -136,7 +137,7 @@ class OrgUnitSubtreeView(RetrieveAPIView):
         if app_user is None:
             return api_response(
                 success=False,
-                message="No AppUser profile found.",
+                message="No AppUser profile found.", code=ResponseCode.NO_APPUSER_PROFILE,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
 
@@ -145,7 +146,7 @@ class OrgUnitSubtreeView(RetrieveAPIView):
         if root is None:
             return api_response(
                 success=False,
-                message="OrgUnit not found or not accessible.",
+                message="OrgUnit not found or not accessible.", code=ResponseCode.ORG_UNIT_NOT_FOUND,
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
@@ -157,7 +158,7 @@ class OrgUnitSubtreeView(RetrieveAPIView):
         serializer = OrgUnitTreeSerializer(subtree, many=True)
         return api_response(
             success=True,
-            message="Subtree retrieved.",
+            message="Subtree retrieved.", code=ResponseCode.SUBTREE_RETRIEVED,
             result=serializer.data,
             status_code=status.HTTP_200_OK,
         )

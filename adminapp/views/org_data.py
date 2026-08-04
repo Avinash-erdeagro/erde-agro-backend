@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 
 from authapp.api.permissions import IsSuperAdminOrOrgUser
 from authapp.api.responses import api_response
+from authapp.api.response_codes import ResponseCode
 from authapp.api.serializers.profiles import FarmerProfileSerializer, FpoProfileSerializer
 from authapp.models.hierarchy import OrgUnitFPO
 from authapp.services.hierarchy import (
@@ -49,7 +50,7 @@ class HierarchyFPOListView(APIView):
             if int(org_unit_id) not in list(accessible_unit_ids):
                 return api_response(
                     success=False,
-                    message="Org unit not found or not accessible.",
+                    message="Org unit not found or not accessible.", code=ResponseCode.ORG_UNIT_NOT_FOUND,
                     result=None,
                     status_code=403,
                 )
@@ -79,7 +80,7 @@ class HierarchyFPOListView(APIView):
 
         return api_response(
             success=True,
-            message=f"{len(result)} FPO(s) found.",
+            message=f"{len(result)} FPO(s) found.", code=ResponseCode.FPOS_FOUND,
             result=result,
         )
 
@@ -115,7 +116,7 @@ class HierarchyFarmerListView(APIView):
             if int(fpo_id) not in list(accessible_fpo_ids):
                 return api_response(
                     success=False,
-                    message="FPO not found or not accessible.",
+                    message="FPO not found or not accessible.", code=ResponseCode.FPO_NOT_FOUND,
                     result=None,
                     status_code=403,
                 )
@@ -130,7 +131,7 @@ class HierarchyFarmerListView(APIView):
             if int(org_unit_id) not in list(accessible_unit_ids):
                 return api_response(
                     success=False,
-                    message="Org unit not found or not accessible.",
+                    message="Org unit not found or not accessible.", code=ResponseCode.ORG_UNIT_NOT_FOUND,
                     result=None,
                     status_code=403,
                 )
@@ -156,7 +157,7 @@ class HierarchyFarmerListView(APIView):
 
         return api_response(
             success=True,
-            message=f"{len(result)} farmer(s) found.",
+            message=f"{len(result)} farmer(s) found.", code=ResponseCode.FARMERS_FOUND,
             result=result,
         )
 
@@ -180,7 +181,7 @@ class HierarchyFarmerDetailView(APIView):
         if not farmer:
             return api_response(
                 success=False,
-                message="Farmer not found or not accessible.",
+                message="Farmer not found or not accessible.", code=ResponseCode.FARMER_NOT_FOUND,
                 result=None,
                 status_code=404,
             )
@@ -188,7 +189,7 @@ class HierarchyFarmerDetailView(APIView):
         fpo = farmer.registered_with_fpo
         return api_response(
             success=True,
-            message="Farmer details fetched.",
+            message="Farmer details fetched.", code=ResponseCode.FARMER_DETAILS_FETCHED,
             result={
                 "id": farmer.pk,
                 "farmer_name": farmer.farmer_name,
@@ -224,7 +225,7 @@ class HierarchyFPODetailView(APIView):
         if not fpo:
             return api_response(
                 success=False,
-                message="FPO not found or not accessible.",
+                message="FPO not found or not accessible.", code=ResponseCode.FPO_NOT_FOUND,
                 result=None,
                 status_code=404,
             )
@@ -232,7 +233,7 @@ class HierarchyFPODetailView(APIView):
         link = getattr(fpo, "org_unit_link", None)
         return api_response(
             success=True,
-            message="FPO details fetched.",
+            message="FPO details fetched.", code=ResponseCode.FPO_DETAILS_FETCHED,
             result={
                 "id": fpo.pk,
                 "fpo_name": fpo.fpo_name,

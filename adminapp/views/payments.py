@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 
 from authapp.api.permissions import IsSuperAdmin
 from authapp.api.responses import api_response
+from authapp.api.response_codes import ResponseCode
 from authapp.models import FarmerProfile, FpoProfile
 from authapp.models.hierarchy import OrgUnitFPO
 from billingapp.models import SatellitePlan
@@ -40,7 +41,7 @@ class SatellitePlanListView(APIView):
         )
         return api_response(
             success=True,
-            message="Active satellite plans.",
+            message="Active satellite plans.", code=ResponseCode.ACTIVE_PLANS,
             result=list(plans),
         )
 
@@ -77,7 +78,7 @@ class SubscriptionSummaryView(APIView):
 
         return api_response(
             success=True,
-            message="Subscription summary.",
+            message="Subscription summary.", code=ResponseCode.SUBSCRIPTION_SUMMARY,
             result={
                 "by_status": by_status,
                 "completed_total_farm_area_acres": float(total_area),
@@ -141,6 +142,6 @@ class FPOSubscriptionDetailView(APIView):
 
         return api_response(
             success=True,
-            message="Per-FPO subscription details.",
+            message="Per-FPO subscription details.", code=ResponseCode.PER_FPO_SUBSCRIPTION,
             result=result,
         )
