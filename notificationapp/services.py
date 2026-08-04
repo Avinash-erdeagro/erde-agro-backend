@@ -1,6 +1,8 @@
 from firebase_admin import messaging
 from authapp.services.firebase import get_firebase_app
 from .models import DeviceToken
+from satelliteapp.services.event_text import resolve_event_text
+
 
 
 def send_push_notification(*, user, title: str, body: str, data: dict = None):
@@ -57,32 +59,14 @@ def send_push_notification(*, user, title: str, body: str, data: dict = None):
     return results
 
 
-def _format_satellite_notification(notification_type: str, details_json: dict):
+def _format_satellite_notification(notification_type: str, details_json: dict, language_code=None):
     """
-    Return (title, body) strings for a given satellite notification_type.
-    Falls back to generic text when the type is unrecognised.
+    Return (title, body) strings for a given satellite notification_type,
+    localized to ``language_code`` (falls back to English). The copy lives in
+    ``satelliteapp.services.event_text`` so push and the events API share it.
     """
-    title_map = {
-        "crop_stress": "Crop Stress Detected",
-        "water_stress": "Water Stress Alert",
-        "pest_risk": "Pest Risk Warning",
-        "growth_stage": "Crop Growth Update",
-        "yield_estimate": "Yield Estimate Ready",
-    }
-    title = title_map.get(notification_type, "Farm Satellite Update")
 
-    # Try to build a human body from well-known detail keys
-    severity = details_json.get("severity") or details_json.get("level")
-    description = details_json.get("description") or details_json.get("message")
-
-    if description:
-        body = str(description)
-    elif severity:
-        body = f"Severity: {severity}"
-    else:
-        body = f"New satellite event: {notification_type.replace('_', ' ').title()}"
-
-    return title, body
+    return resolve_event_text(notification_type, details_json, language_code)
 
 
 def send_pending_satellite_notifications(notification_qs):
@@ -104,9 +88,10 @@ def send_pending_satellite_notifications(notification_qs):
     )
 
     for notif in notifications:
-        django_user = notif.order_farm.farm.farmer.user
+        farmer = notif.order_farm.farm.farmer
+        django_user = farmer.user
         title, body = _format_satellite_notification(
-            notif.notification_type, notif.details_json
+            notif.notification_type, notif.details_json, farmer.preferred_language
         )
         data = {
             "notification_id": str(notif.id),

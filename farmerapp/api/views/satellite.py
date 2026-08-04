@@ -221,6 +221,7 @@ class FarmSatelliteInsightsView(BaseAPIView):
             insights = fetch_farm_insights(
                 farm_id=farm.id,
                 observation_date=observation_date.isoformat(),
+                language_code=getattr(request, "language_code", None),
             )
         except SatelliteServiceError as exc:
             return api_response(
@@ -543,6 +544,7 @@ class FarmSatelliteEventsView(BaseAPIView):
             satellite_events = fetch_farm_events_by_farm_ids(
                 observation_date=observation_date.isoformat(),
                 farm_ids=farm_ids,
+                language_code=getattr(request, "language_code", None),
             )
         except SatelliteServiceError as exc:
             return api_response(

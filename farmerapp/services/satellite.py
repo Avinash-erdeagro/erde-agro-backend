@@ -14,6 +14,7 @@ from satelliteapp.services.metrics import (
     calculate_soil_moisture,
 )
 from satelliteapp.services.utils import to_float
+from satelliteapp.services.event_text import resolve_event_text
 from farmerapp.utils import previous_day
 from authapp.api.response_codes import ResponseCode
 
@@ -59,17 +60,25 @@ def _serialize_result(result):
     }
 
 
-def _serialize_alert(alert):
+def _serialize_alert(alert, language_code=None):
+    title, body = resolve_event_text(alert.alert_type, alert.details_json, language_code)
     return {
         "alert_type": alert.alert_type,
+        "title": title,
+        "body": body,
         "details_json": alert.details_json,
         "created_at": alert.created_at.isoformat() if alert.created_at else None,
     }
 
 
-def _serialize_notification(notification):
+def _serialize_notification(notification, language_code=None):
+    title, body = resolve_event_text(
+        notification.notification_type, notification.details_json, language_code
+    )
     return {
         "notification_type": notification.notification_type,
+        "title": title,
+        "body": body,
         "details_json": notification.details_json,
         "created_at": notification.created_at.isoformat() if notification.created_at else None,
     }
@@ -114,7 +123,7 @@ def fetch_satellite_results_by_farm_id(farm_id: int):
     return [_serialize_result(result) for result in results]
 
 
-def fetch_farm_insights(*, farm_id: int, observation_date: str):
+def fetch_farm_insights(*, farm_id: int, observation_date: str, language_code=None):
     obs_date = previous_day(observation_date)
 
     result = (
@@ -158,8 +167,8 @@ def fetch_farm_insights(*, farm_id: int, observation_date: str):
         "crop_growth": round(crop_growth) if crop_growth is not None else None,
         "temperature": round(temperature) if temperature is not None else None,
         "data_json": data_json,
-        "alerts": [_serialize_alert(alert) for alert in alerts],
-        "notifications": [_serialize_notification(notification) for notification in notifications],
+        "alerts": [_serialize_alert(alert, language_code) for alert in alerts],
+        "notifications": [_serialize_notification(notification, language_code) for notification in notifications],
         "irrigation_advisory": (
             {
                 "date": irrigation_advisory["date"].isoformat(),
@@ -171,7 +180,7 @@ def fetch_farm_insights(*, farm_id: int, observation_date: str):
     }
 
 
-def fetch_farm_events_by_farm_ids(*, observation_date: str, farm_ids: list[int]):
+def fetch_farm_events_by_farm_ids(*, observation_date: str, farm_ids: list[int], language_code=None):
     if not farm_ids:
         return {"observation_date": observation_date, "results": []}
 
@@ -203,8 +212,8 @@ def fetch_farm_events_by_farm_ids(*, observation_date: str, farm_ids: list[int])
         results.append({
             "farm_id": farm_id,
             "observation_date": obs_date.isoformat(),
-            "alerts": [_serialize_alert(alert) for alert in alerts],
-            "notifications": [_serialize_notification(notification) for notification in notifications],
+            "alerts": [_serialize_alert(alert, language_code) for alert in alerts],
+            "notifications": [_serialize_notification(notification, language_code) for notification in notifications],
         })
 
     return {"observation_date": obs_date.isoformat(), "results": results}
