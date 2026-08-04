@@ -15,6 +15,7 @@ from satelliteapp.services.metrics import (
 )
 from satelliteapp.services.utils import to_float
 from satelliteapp.services.event_text import resolve_event_text
+from satelliteapp.services.label_text import localize_label
 from farmerapp.utils import previous_day
 from authapp.api.response_codes import ResponseCode
 
@@ -41,6 +42,21 @@ API_MAP_LAYER_NAMES = {
     9: "Soil Water Potential",
     10: "Moisture Status",
     12: "Soil Temp Daily",
+}
+
+# Display units per layer, keyed by band. Universal scientific notation — sent
+# as-is, never translated. Empty string = no unit (NDVI is dimensionless;
+# Moisture Status is categorical and carries a legend instead).
+API_MAP_LAYER_UNITS = {
+    3: "m³/m³",       # Soil Moisture (volumetric)
+    4: "%",           # Leaf N
+    5: "",            # NDVI
+    6: "mm/day",      # Actual ET
+    7: "kg/ha",       # Total Crop Growth
+    8: "kg/ha/day",   # Crop Growth
+    9: "pF",          # Soil Water Potential
+    10: "",           # Moisture Status (categorical)
+    12: "°C",         # Soil Temp Daily
 }
 
 
@@ -280,7 +296,7 @@ CHART_DEFINITIONS = [
 ]
 
 
-def fetch_farm_charts(*, farm_id: int, observation_date: str):
+def fetch_farm_charts(*, farm_id: int, observation_date: str, language_code=None):
     obs_date = previous_day(observation_date)
     start_date = obs_date - timedelta(days=29)
 
@@ -311,8 +327,8 @@ def fetch_farm_charts(*, farm_id: int, observation_date: str):
                 }
                 for row in rows
             ]
-            lines.append({"key": key, "label": label, "data": data_points})
-        charts.append({"chart_name": chart_def["chart_name"], "lines": lines})
+            lines.append({"key": key, "label": localize_label(label, language_code), "data": data_points})
+        charts.append({"chart_name": localize_label(chart_def["chart_name"], language_code), "lines": lines})
 
     return {
         "farm_id": farm_id,
@@ -321,7 +337,20 @@ def fetch_farm_charts(*, farm_id: int, observation_date: str):
     }
 
 
-def fetch_farm_map_layers_by_farm_ids(*, observation_date: str, farm_ids: list[int]):
+def _localize_legend(legend, is_categorical, language_code):
+    """Localize the text ``label`` of categorical legend entries (e.g. Moisture
+    Status). Numeric legends carry only ``value``/``color`` and pass through."""
+    if not is_categorical or not isinstance(legend, list):
+        return legend
+    return [
+        {**entry, "label": localize_label(entry["label"], language_code)}
+        if isinstance(entry, dict) and "label" in entry
+        else entry
+        for entry in legend
+    ]
+
+
+def fetch_farm_map_layers_by_farm_ids(*, observation_date: str, farm_ids: list[int], language_code=None):
     if not farm_ids:
         return {"observation_date": observation_date, "results": []}
 
@@ -346,11 +375,11 @@ def fetch_farm_map_layers_by_farm_ids(*, observation_date: str, farm_ids: list[i
         farm_id = row["order_farm__farm_id"]
         layers_by_farm.setdefault(farm_id, []).append({
             "band_number": row["band_number"],
-            "layer_name": API_MAP_LAYER_NAMES[row["band_number"]],
-            "unit": row["unit"],
+            "layer_name": localize_label(API_MAP_LAYER_NAMES[row["band_number"]], language_code),
+            "unit": API_MAP_LAYER_UNITS.get(row["band_number"], ""),
             "png_url": row["png_url"],
             "bounds": row["bounds"],
-            "legend": row["legend"],
+            "legend": _localize_legend(row["legend"], row["is_categorical"], language_code),
             "is_categorical": row["is_categorical"],
         })
 

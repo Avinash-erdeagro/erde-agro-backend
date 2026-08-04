@@ -279,6 +279,7 @@ class FPOSatelliteMapLayersView(BaseAPIView):
             satellite_layers = fetch_farm_map_layers_by_farm_ids(
                 observation_date=observation_date.isoformat(),
                 farm_ids=farm_ids,
+                language_code=getattr(request, "language_code", None),
             )
         except SatelliteServiceError as exc:
             return api_response(
@@ -366,6 +367,7 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
             satellite_layers = fetch_farm_map_layers_by_farm_ids(
                 observation_date=observation_date.isoformat(),
                 farm_ids=[farm.id],
+                language_code=getattr(request, "language_code", None),
             )
         except SatelliteServiceError as exc:
             return api_response(
