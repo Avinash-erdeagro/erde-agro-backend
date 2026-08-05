@@ -237,6 +237,7 @@ def fetch_farm_events_by_farm_ids(*, observation_date: str, farm_ids: list[int],
 
 CHART_DEFINITIONS = [
     {
+        "key": "CROP_GROWTH",
         "chart_name": "Crop Growth",
         "lines": [
             ("attainable_biomass_production_cumulative", "Attainable Crop Growth", "attainable_crop_production_cumulative"),
@@ -245,18 +246,21 @@ CHART_DEFINITIONS = [
         ],
     },
     {
+        "key": "PERCENT_VEGETATION_COVER",
         "chart_name": "Percent Vegetation Cover",
         "lines": [
             ("vegetation_cover", "Vegetation Cover", "vegetation_cover"),
         ],
     },
     {
+        "key": "LEAF_NITROGEN",
         "chart_name": "Leaf Nitrogen",
         "lines": [
             ("leaf_nitrogen", "Leaf Nitrogen", "leaf_nitrogen"),
         ],
     },
     {
+        "key": "SOIL_MOISTURE_PROBE",
         "chart_name": "Virtual Soil Moisture Probe",
         "lines": [
             ("theta_sat_sub", "Saturated Soil Moisture Root Zone", "theta_sat_sub"),
@@ -269,6 +273,7 @@ CHART_DEFINITIONS = [
         ],
     },
     {
+        "key": "ACTUAL_ET",
         "chart_name": "Actual Evapotranspiration and Transpiration",
         "lines": [
             ("actual_evapotranspiration", "Actual Evapotranspiration", "actual_evapotranspiration"),
@@ -276,6 +281,7 @@ CHART_DEFINITIONS = [
         ],
     },
     {
+        "key": "CUMULATIVE_ET",
         "chart_name": "Cumulative Evapotranspiration, Irrigation, and Precipitation",
         "lines": [
             ("actual_evapotranspiration_cumulative", "Actual Evapotranspiration Cumulative (mm)", "actual_evapotranspiration_cumulative"),
@@ -284,6 +290,7 @@ CHART_DEFINITIONS = [
         ],
     },
     {
+        "key": "TENSIOMETER",
         "chart_name": "Virtual Tensiometer",
         "lines": [
             ("soil_water_potential_fc", "Soil Water Potential Field Capacity", "soil_water_potential_fc"),
@@ -328,7 +335,7 @@ def fetch_farm_charts(*, farm_id: int, observation_date: str, language_code=None
                 for row in rows
             ]
             lines.append({"key": key, "label": localize_label(label, language_code), "data": data_points})
-        charts.append({"chart_name": localize_label(chart_def["chart_name"], language_code), "lines": lines})
+        charts.append({"key": chart_def["key"], "chart_name": localize_label(chart_def["chart_name"], language_code), "lines": lines})
 
     return {
         "farm_id": farm_id,
