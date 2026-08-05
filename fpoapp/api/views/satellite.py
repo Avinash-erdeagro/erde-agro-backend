@@ -1,3 +1,5 @@
+import json
+
 from django.db.models import Sum, Q, Count
 from satelliteapp.models import SatelliteFarmAlert
 from farmerapp.models import Farm, FarmCrop
@@ -12,14 +14,15 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
 from authapp.api.responses import api_response
+from authapp.api.response_codes import ResponseCode
 from authapp.api.views.base import BaseAPIView
 from authapp.models import AppUser
 from farmerapp.api.serializers import FarmerSatelliteOverviewQuerySerializer
 from farmerapp.models import Farm, FarmCrop, FarmSatelliteSubscription, SatelliteSubscriptionStatus
 from farmerapp.services import (
     SatelliteServiceError,
-    fetch_farm_map_layers_by_external_ids,
-    fetch_satellite_metrics_by_external_ids,
+    fetch_farm_map_layers_by_farm_ids,
+    fetch_satellite_metrics_by_farm_ids,
 )
 
 
@@ -31,7 +34,7 @@ class FPOSatelliteOverviewView(BaseAPIView):
         if app_user.role != AppUser.Role.FPO:
             return api_response(
                 success=False,
-                message="This API is available only for FPO users.",
+                message="This API is available only for FPO users.", code=ResponseCode.FPO_ONLY,
                 result=None,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
@@ -59,6 +62,8 @@ class FPOSatelliteOverviewView(BaseAPIView):
             "active": [],
         }
 
+        language_code = getattr(request, "language_code", None)
+
         for farm in farms:
             active_crop = next(
                 (crop for crop in farm.crops.all() if crop.is_active),
@@ -67,7 +72,7 @@ class FPOSatelliteOverviewView(BaseAPIView):
             if active_crop is None:
                 active_crop = next(iter(farm.crops.all()), None)
 
-            crop_name = active_crop.primary_crop_name if active_crop else None
+            crop_name = active_crop.primary_crop_localized_name(language_code) if active_crop else None
             subscription = next(iter(farm.satellite_subscriptions.all()), None)
 
             if crop_name:
@@ -101,6 +106,7 @@ class FPOSatelliteOverviewView(BaseAPIView):
 
             if subscription is None:
                 farm_payload["message"] = "Satellite data is not enabled for this farm."
+                farm_payload["code"] = ResponseCode.SATELLITE_NOT_ENABLED
                 farm_groups["not_paid"].append(farm_payload)
                 continue
 
@@ -111,6 +117,7 @@ class FPOSatelliteOverviewView(BaseAPIView):
                 farm_payload["message"] = (
                     "Satellite data subscription is active, but data is not available yet."
                 )
+                farm_payload["code"] = ResponseCode.SATELLITE_AWAITING_DATA
                 farm_groups["awaiting_data"].append(farm_payload)
                 continue
 
@@ -120,31 +127,23 @@ class FPOSatelliteOverviewView(BaseAPIView):
                 continue
 
             farm_payload["message"] = "Satellite data is not enabled for this farm."
+            farm_payload["code"] = ResponseCode.SATELLITE_NOT_ENABLED
             farm_groups["not_paid"].append(farm_payload)
 
-        satellite_response = {
-            "observation_date": observation_date.isoformat(),
-            "results": [],
-        }
+        metrics_by_farm_id = {}
         if syncing_farm_ids:
             try:
-                satellite_response = fetch_satellite_metrics_by_external_ids(
+                metrics_by_farm_id = fetch_satellite_metrics_by_farm_ids(
                     observation_date=observation_date.isoformat(),
-                    external_ids=syncing_farm_ids,
+                    farm_ids=syncing_farm_ids,
                 )
             except SatelliteServiceError as exc:
                 return api_response(
                     success=False,
-                    message=str(exc),
+                    message=str(exc), code=getattr(exc, "code", ResponseCode.SATELLITE_ERROR),
                     result=None,
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
-
-        metrics_by_farm_id = {
-            item["external_id"]: item
-            for item in satellite_response.get("results", [])
-            if isinstance(item, dict) and item.get("external_id") is not None
-        }
 
         for farm_id in syncing_farm_ids:
             farm_payload = farms_by_id[farm_id]
@@ -154,10 +153,12 @@ class FPOSatelliteOverviewView(BaseAPIView):
                 farm_payload["soil_moisture"] = metric.get("soil_moisture")
                 farm_payload["crop_growth"] = metric.get("crop_growth")
                 farm_payload["message"] = None
+                farm_payload["code"] = None
             else:
                 farm_payload["message"] = (
                     "This date's data is not currently available. Please choose an earlier date."
                 )
+                farm_payload["code"] = ResponseCode.SATELLITE_DATE_UNAVAILABLE
 
             farm_groups["active"].append(farm_payload)
 
@@ -174,11 +175,9 @@ class FPOSatelliteOverviewView(BaseAPIView):
 
         return api_response(
             success=True,
-            message="FPO satellite overview fetched successfully.",
+            message="FPO satellite overview fetched successfully.", code=ResponseCode.SATELLITE_OVERVIEW_FETCHED,
             result={
-                "observation_date": satellite_response.get(
-                    "observation_date", observation_date.isoformat()
-                ),
+                "observation_date": observation_date.isoformat(),
                 "crop_overview": crop_overview,
                 "farms": {
                     "not_paid": {
@@ -220,11 +219,11 @@ class FPOSatelliteMapLayersView(BaseAPIView):
                 )
             )
             .filter(latest_subscription_status=SatelliteSubscriptionStatus.SYNCING)
-            .only("id", "farm_name", "area", "farmer")
+            .only("id", "farm_name", "area", "farmer", "boundary")
             .prefetch_related(Prefetch("crops", queryset=crop_queryset))
         )
 
-    def build_response_grouped_by_farmer(self, farms, layers_by_farm_id):
+    def build_response_grouped_by_farmer(self, farms, layers_by_farm_id, language_code=None):
         farmers_map = defaultdict(lambda: {"farmer_name": None, "farms": []})
 
         for farm in farms:
@@ -240,7 +239,8 @@ class FPOSatelliteMapLayersView(BaseAPIView):
                     "farm_id": farm.id,
                     "farm_name": farm.farm_name,
                     "area": farm.area,
-                    "crop_name": crop.primary_crop_name if crop else None,
+                    "crop_name": crop.primary_crop_localized_name(language_code) if crop else None,
+                    "boundary": json.loads(farm.boundary.geojson) if farm.boundary else None,
                     "observation_date": layers_result.get("observation_date"),
                     "layers": layers_result.get("layers", []),
                 }
@@ -261,7 +261,7 @@ class FPOSatelliteMapLayersView(BaseAPIView):
         if app_user.role != AppUser.Role.FPO:
             return api_response(
                 success=False,
-                message="This API is available only for FPO users.",
+                message="This API is available only for FPO users.", code=ResponseCode.FPO_ONLY,
                 result=None,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
@@ -273,36 +273,40 @@ class FPOSatelliteMapLayersView(BaseAPIView):
         observation_date = serializer.validated_data["observation_date"]
 
         farms = list(self.get_queryset(app_user.fpo_profile))
-        external_ids = [farm.id for farm in farms]
+        farm_ids = [farm.id for farm in farms]
 
         try:
-            satellite_layers = fetch_farm_map_layers_by_external_ids(
+            satellite_layers = fetch_farm_map_layers_by_farm_ids(
                 observation_date=observation_date.isoformat(),
-                external_ids=external_ids,
+                farm_ids=farm_ids,
+                language_code=getattr(request, "language_code", None),
             )
         except SatelliteServiceError as exc:
             return api_response(
                 success=False,
-                message=str(exc),
+                message=str(exc), code=getattr(exc, "code", ResponseCode.SATELLITE_ERROR),
                 result=None,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         layers_by_farm_id = {
-            item["external_id"]: {
+            item["farm_id"]: {
                 key: value
                 for key, value in item.items()
-                if key != "external_id"
+                if key != "farm_id"
             }
             for item in satellite_layers.get("results", [])
-            if isinstance(item, dict) and item.get("external_id") is not None
+            if isinstance(item, dict) and item.get("farm_id") is not None
         }
 
-        farmers = self.build_response_grouped_by_farmer(farms, layers_by_farm_id)
+        farmers = self.build_response_grouped_by_farmer(
+            farms, layers_by_farm_id,
+            language_code=getattr(request, "language_code", None),
+        )
 
         return api_response(
             success=True,
-            message="FPO farm map layers fetched successfully.",
+            message="FPO farm map layers fetched successfully.", code=ResponseCode.SATELLITE_MAP_LAYERS_FETCHED,
             result={
                 "observation_date": satellite_layers.get(
                     "observation_date",
@@ -336,7 +340,7 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
                 )
             )
             .filter(latest_subscription_status=SatelliteSubscriptionStatus.SYNCING)
-            .only("id", "farm_name", "area", "farmer")
+            .only("id", "farm_name", "area", "farmer", "boundary")
             .prefetch_related(Prefetch("crops", queryset=crop_queryset))
         )
 
@@ -346,7 +350,7 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
         if app_user.role != AppUser.Role.FPO:
             return api_response(
                 success=False,
-                message="This API is available only for FPO users.",
+                message="This API is available only for FPO users.", code=ResponseCode.FPO_ONLY,
                 result=None,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
@@ -360,26 +364,27 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
         farm = get_object_or_404(self.get_queryset(app_user.fpo_profile), pk=farm_id)
 
         try:
-            satellite_layers = fetch_farm_map_layers_by_external_ids(
+            satellite_layers = fetch_farm_map_layers_by_farm_ids(
                 observation_date=observation_date.isoformat(),
-                external_ids=[farm.id],
+                farm_ids=[farm.id],
+                language_code=getattr(request, "language_code", None),
             )
         except SatelliteServiceError as exc:
             return api_response(
                 success=False,
-                message=str(exc),
+                message=str(exc), code=getattr(exc, "code", ResponseCode.SATELLITE_ERROR),
                 result=None,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         layers_by_farm_id = {
-            item["external_id"]: {
+            item["farm_id"]: {
                 key: value
                 for key, value in item.items()
-                if key != "external_id"
+                if key != "farm_id"
             }
             for item in satellite_layers.get("results", [])
-            if isinstance(item, dict) and item.get("external_id") is not None
+            if isinstance(item, dict) and item.get("farm_id") is not None
         }
 
         crop = next(iter(farm.crops.all()), None)
@@ -387,12 +392,13 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
 
         return api_response(
             success=True,
-            message="FPO farm map layers fetched successfully.",
+            message="FPO farm map layers fetched successfully.", code=ResponseCode.SATELLITE_MAP_LAYERS_FETCHED,
             result={
                 "farm_id": farm.id,
                 "farm_name": farm.farm_name,
                 "area": farm.area,
-                "crop_name": crop.primary_crop_name if crop else None,
+                "crop_name": crop.primary_crop_localized_name(getattr(request, "language_code", None)) if crop else None,
+                "boundary": json.loads(farm.boundary.geojson) if farm.boundary else None,
                 "observation_date": layers_result.get(
                     "observation_date",
                     satellite_layers.get("observation_date", observation_date.isoformat()),
@@ -411,23 +417,23 @@ class FPOOverviewAPIView(BaseAPIView):
         if app_user.role != AppUser.Role.FPO:
             return api_response(
                 success=False,
-                message="This API is available only for FPO users.",
+                message="This API is available only for FPO users.", code=ResponseCode.FPO_ONLY,
                 result=None,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
 
         fpo_profile = getattr(app_user, "fpo_profile", None)
         if not fpo_profile:
-            return api_response(False, "No FPO profile found.", None, 403)
+            return api_response(success=False, message="No FPO profile found.", result=None, status_code=403, code=ResponseCode.FPO_PROFILE_NOT_FOUND)
 
         observation_date = request.query_params.get("observation_date")
         if not observation_date:
-            return api_response(False, "observation_date is required (YYYY-MM-DD)", None, 400)
+            return api_response(success=False, message="observation_date is required (YYYY-MM-DD)", result=None, status_code=400, code=ResponseCode.OBSERVATION_DATE_REQUIRED)
         try:
             parsed_date = datetime.strptime(observation_date, "%Y-%m-%d").date()
             observation_date = parsed_date - timedelta(days=1)
         except ValueError:
-            return api_response(False, "Invalid observation_date format. Use YYYY-MM-DD", None, 400)
+            return api_response(success=False, message="Invalid observation_date format. Use YYYY-MM-DD", result=None, status_code=400, code=ResponseCode.OBSERVATION_DATE_INVALID)
 
 
         # Optional filters
@@ -446,12 +452,18 @@ class FPOOverviewAPIView(BaseAPIView):
         total_area = farms.aggregate(total_area=Sum("area"))['total_area'] or 0.0
 
         # Crop-wise area
+        language_code = getattr(request, "language_code", None)
+        crop_name_field = (
+            f"primary_crop__name_{language_code}"
+            if language_code and language_code != "en"
+            else "primary_crop__name"
+        )
         crop_areas = (
             FarmCrop.objects.filter(
                 farm__in=farms,
                 is_active=True
             )
-            .values("primary_crop__name", "custom_primary_crop_name")
+            .values(crop_name_field, "primary_crop__name", "custom_primary_crop_name")
             .annotate(total_area=Sum("farm__area"), farms_count=Count("farm", distinct=True))
             .order_by("primary_crop__name")
         )
@@ -465,7 +477,7 @@ class FPOOverviewAPIView(BaseAPIView):
         crop_growth_alert_types = ["CROP_HEALTH_DROPPING"]
 
         alerts_qs = SatelliteFarmAlert.objects.filter(
-            farm__in=farms,
+            order_farm__farm__in=farms,
             observation_date=observation_date
         )
 
@@ -475,13 +487,13 @@ class FPOOverviewAPIView(BaseAPIView):
 
         return api_response(
             success=True,
-            message="FPO Overview fetched successfully.",
+            message="FPO Overview fetched successfully.", code=ResponseCode.FPO_OVERVIEW_FETCHED,
             result={
                 "observation_date": observation_date,
                 "total_area": round(total_area, 2),
                 "crops": [
                     {
-                        "crop_name": c["primary_crop__name"] or c["custom_primary_crop_name"],
+                        "crop_name": c.get(crop_name_field) or c["primary_crop__name"] or c["custom_primary_crop_name"],
                         "total_area": round(c["total_area"] or 0, 2),
                         "farms_count": c["farms_count"]
                     }

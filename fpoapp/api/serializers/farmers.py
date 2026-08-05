@@ -54,14 +54,14 @@ class FPOFarmerListSerializer(serializers.ModelSerializer):
         from farmerapp.api.serializers.farm import FarmSerializer
         for farm in farms:
             # Serialize all farm fields
-            farm_data = FarmSerializer(farm).data
+            farm_data = FarmSerializer(farm, context=self.context).data
             # Find the active crop for this farm
             active_crop = None
             plantation_date = None
             for crop in farm.crops.all():
                 if getattr(crop, 'is_active', False):
                     if crop.primary_crop_id:
-                        active_crop = CropTypeSerializer(crop.primary_crop).data
+                        active_crop = CropTypeSerializer(crop.primary_crop, context=self.context).data
                     else:
                         active_crop = {"id": None, "name": crop.custom_primary_crop_name}
                     plantation_date = crop.plantation_date

@@ -57,6 +57,17 @@ class FarmCrop(models.Model):
             return self.primary_crop.name
         return self.custom_primary_crop_name
 
+    def primary_crop_localized_name(self, language_code=None):
+        """Crop name in the given language, falling back to English (and to the
+        farmer's custom name when there's no linked CropType)."""
+        if self.primary_crop_id:
+            if language_code and language_code != "en":
+                translated = getattr(self.primary_crop, f"name_{language_code}", "")
+                if translated:
+                    return translated
+            return self.primary_crop.name
+        return self.custom_primary_crop_name
+
     @property
     def intercrop_name(self):
         if self.intercrop_id:

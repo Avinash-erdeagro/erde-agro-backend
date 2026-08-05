@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
 from authapp.api.responses import api_response
+from authapp.api.response_codes import ResponseCode
 from authapp.models import FpoProfile, FarmerProfile, AppUser
 from ..serializers import (
     FarmerMyProfileSerializer,
@@ -49,7 +50,7 @@ class FarmerMyProfileView(BaseAPIView):
         if app_user.role != AppUser.Role.FARMER:
             return None, api_response(
                 success=False,
-                message="This API is available only for farmer users.",
+                message="This API is available only for farmer users.", code=ResponseCode.FARMER_ONLY,
                 result=None,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
@@ -59,7 +60,7 @@ class FarmerMyProfileView(BaseAPIView):
         if not profile:
             return None, api_response(
                 success=False,
-                message="Farmer profile not found.",
+                message="Farmer profile not found.", code=ResponseCode.FARMER_PROFILE_NOT_FOUND,
                 result=None,
                 status_code=status.HTTP_404_NOT_FOUND,
             )
@@ -72,7 +73,7 @@ class FarmerMyProfileView(BaseAPIView):
         serializer = FarmerMyProfileSerializer(profile)
         return api_response(
             success=True,
-            message="Farmer profile fetched successfully.",
+            message="Farmer profile fetched successfully.", code=ResponseCode.FARMER_PROFILE_FETCHED,
             result=serializer.data,
             status_code=status.HTTP_200_OK,
         )
@@ -86,7 +87,7 @@ class FarmerMyProfileView(BaseAPIView):
         serializer.save()
         return api_response(
             success=True,
-            message="Farmer profile updated successfully.",
+            message="Farmer profile updated successfully.", code=ResponseCode.FARMER_PROFILE_UPDATED,
             result=serializer.data,
             status_code=status.HTTP_200_OK,
         )
@@ -100,7 +101,7 @@ class FPOMyProfileView(BaseAPIView):
         if app_user.role != AppUser.Role.FPO:
             return None, api_response(
                 success=False,
-                message="This API is available only for FPO users.",
+                message="This API is available only for FPO users.", code=ResponseCode.FPO_ONLY,
                 result=None,
                 status_code=status.HTTP_403_FORBIDDEN,
             )
@@ -110,7 +111,7 @@ class FPOMyProfileView(BaseAPIView):
         if not profile:
             return None, api_response(
                 success=False,
-                message="FPO profile not found.",
+                message="FPO profile not found.", code=ResponseCode.FPO_PROFILE_NOT_FOUND,
                 result=None,
                 status_code=status.HTTP_404_NOT_FOUND,
             )
@@ -123,7 +124,7 @@ class FPOMyProfileView(BaseAPIView):
         serializer = FPOMyProfileSerializer(profile)
         return api_response(
             success=True,
-            message="FPO profile fetched successfully.",
+            message="FPO profile fetched successfully.", code=ResponseCode.FPO_PROFILE_FETCHED,
             result=serializer.data,
             status_code=status.HTTP_200_OK,
         )
@@ -137,7 +138,7 @@ class FPOMyProfileView(BaseAPIView):
         serializer.save()
         return api_response(
             success=True,
-            message="FPO profile updated successfully.",
+            message="FPO profile updated successfully.", code=ResponseCode.FPO_PROFILE_UPDATED,
             result=serializer.data,
             status_code=status.HTTP_200_OK,
         )
@@ -151,7 +152,7 @@ class FPOListView(BaseAPIView):
         serializer = FPOListSerializer(fpos, many=True)
         return api_response(
             success=True,
-            message="FPO list fetched successfully.",
+            message="FPO list fetched successfully.", code=ResponseCode.FPO_LIST_FETCHED,
             result={"fpos": serializer.data},
             status_code=status.HTTP_200_OK,
         )

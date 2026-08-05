@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 
 from authapp.api.permissions import IsSuperAdmin
 from authapp.api.responses import api_response
+from authapp.api.response_codes import ResponseCode
 from authapp.models import AppUser
 from authapp.models.hierarchy import OrgUnit, OrgUnitFPO
 from notificationapp.models import DeviceToken
@@ -54,7 +55,7 @@ class DeviceTokenStatsView(APIView):
 
         return api_response(
             success=True,
-            message="Device token stats.",
+            message="Device token stats.", code=ResponseCode.DEVICE_TOKEN_STATS,
             result={
                 "total_tokens": qs.count(),
                 "by_platform": by_platform,
@@ -96,6 +97,6 @@ class UserNotificationCoverageView(APIView):
 
         return api_response(
             success=True,
-            message="Users without a registered device token.",
+            message="Users without a registered device token.", code=ResponseCode.NO_DEVICE_TOKEN,
             result={"count": len(result), "users": result},
         )

@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
 from authapp.api.responses import api_response
+from authapp.api.response_codes import ResponseCode
 from authapp.api.views.base import BaseAPIView
 from billingapp.api.serializers import SatellitePricingRequestSerializer
 from billingapp.models import SatellitePlan
@@ -38,7 +39,7 @@ class SatellitePricingView(BaseAPIView):
         if app_user.role == "FARMER" and len(farm_ids) != 1:
             return api_response(
                 success=False,
-                message="Farmers can request pricing for only one farm at a time.",
+                message="Farmers can request pricing for only one farm at a time.", code=ResponseCode.SINGLE_FARM_PRICING,
                 result=None,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
@@ -54,7 +55,7 @@ class SatellitePricingView(BaseAPIView):
         if missing_farm_ids:
             return api_response(
                 success=False,
-                message=f"Invalid or inaccessible farm IDs: {missing_farm_ids}",
+                message=f"Invalid or inaccessible farm IDs: {missing_farm_ids}", code=ResponseCode.INVALID_FARM_IDS,
                 result=None,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
@@ -63,7 +64,7 @@ class SatellitePricingView(BaseAPIView):
         if not plans:
             return api_response(
                 success=False,
-                message="No active satellite plans are configured.",
+                message="No active satellite plans are configured.", code=ResponseCode.NO_ACTIVE_PLANS,
                 result=None,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
@@ -153,7 +154,7 @@ class SatellitePricingView(BaseAPIView):
 
         return api_response(
             success=True,
-            message="Satellite plan pricing fetched successfully.",
+            message="Satellite plan pricing fetched successfully.", code=ResponseCode.PRICING_FETCHED,
             result=result,
             status_code=status.HTTP_200_OK,
         )

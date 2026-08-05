@@ -1,55 +1,33 @@
 import logging
 
 from celery import shared_task
-from django.utils import timezone
 
-from notificationapp.services import send_pending_satellite_notifications
-from satelliteapp.models import (
-    SatelliteEventReceipt,
-    SatelliteEventReceiptStatus,
-    SatelliteFarmNotification,
-    SatelliteFarmNotificationPushStatus,
-)
-from satelliteapp.services.processor import process_receipt
+from satelliteapp.services import ingest, seed
+from satelliteapp.models import SatelliteResult
+from satelliteapp.services.tiff_processor import process_result_map_layers
 
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def process_satellite_receipt(self, receipt_id: int):
-    try:
-        receipt = SatelliteEventReceipt.objects.get(id=receipt_id)
-    except SatelliteEventReceipt.DoesNotExist:
-        logger.error("Receipt %s not found", receipt_id)
+@shared_task(name="satelliteapp.run_satellite_sync")
+def run_satellite_sync(job="all"):
+    """Celery entrypoint for the IrriWatch sync. job = seed | ingest | all."""
+    logger.info("Satellite sync task started job=%s", job)
+
+    if job in ("seed", "all"):
+        seed.run()
+    if job in ("ingest", "all"):
+        ingest.run()
+
+    logger.info("Satellite sync task finished job=%s", job)
+
+@shared_task(name="satelliteapp.render_result_map_layers")
+def render_result_map_layers(result_id):
+    """Render a SatelliteResult's GeoTIFF into map-overlay PNGs + legends (SatelliteMapLayer rows)."""
+
+    result = SatelliteResult.objects.filter(id=result_id).first()
+    if result is None:
+        logger.warning("render_result_map_layers: result %s not found", result_id)
         return
 
-    if receipt.status != SatelliteEventReceiptStatus.RECEIVED:
-        logger.info("Receipt %s already in status %s, skipping", receipt_id, receipt.status)
-        return
-
-    receipt.status = SatelliteEventReceiptStatus.PROCESSING
-    receipt.save(update_fields=["status"])
-
-    try:
-        process_receipt(receipt)
-    except Exception as exc:
-        receipt.status = SatelliteEventReceiptStatus.FAILED
-        receipt.failure_reason = str(exc)
-        receipt.processed_at = timezone.now()
-        receipt.save(update_fields=["status", "failure_reason", "processed_at"])
-        logger.exception("Receipt %s: processing failed – %s", receipt_id, exc)
-        raise self.retry(exc=exc)
-
-    pending_qs = SatelliteFarmNotification.objects.filter(
-        receipt=receipt,
-        push_status=SatelliteFarmNotificationPushStatus.PENDING,
-    )
-    if pending_qs.exists():
-        sent, failed, no_devices = send_pending_satellite_notifications(pending_qs)
-        logger.info(
-            "Receipt %s: %s sent, %s failed, %s no-device",
-            receipt_id,
-            sent,
-            failed,
-            no_devices,
-        )
+    process_result_map_layers(result)
