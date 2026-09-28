@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 
 from collections import defaultdict
 
+from django.contrib.gis.db.models.functions import Centroid
 from django.db.models import OuterRef, Prefetch, Subquery
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -24,6 +25,7 @@ from farmerapp.services import (
     fetch_farm_map_layers_by_farm_ids,
     fetch_satellite_metrics_by_farm_ids,
 )
+from fpoapp.utils import filter_fpo_farms
 
 
 class FPOSatelliteOverviewView(BaseAPIView):
@@ -437,17 +439,12 @@ class FPOOverviewAPIView(BaseAPIView):
 
 
         # Optional filters
-        state = request.query_params.get("state")
-        district = request.query_params.get("district")
-        farmer_id = request.query_params.get("farmer")
-
-        farms = Farm.objects.filter(farmer__farmer_profile__registered_with_fpo=fpo_profile)
-        if state:
-            farms = farms.filter(farmer__farmer_profile__locality__state__iexact=state)
-        if district:
-            farms = farms.filter(farmer__farmer_profile__locality__district__iexact=district)
-        if farmer_id:
-            farms = farms.filter(farmer__farmer_profile__id=farmer_id)
+        farms = filter_fpo_farms(
+            fpo_profile,
+            state=request.query_params.get("state"),
+            district=request.query_params.get("district"),
+            farmer_id=request.query_params.get("farmer"),
+        )
 
         total_area = farms.aggregate(total_area=Sum("area"))['total_area'] or 0.0
 
@@ -506,4 +503,87 @@ class FPOOverviewAPIView(BaseAPIView):
                 },
             },
             status_code=200,
+        )
+
+
+# --- FPO Farm Boundaries (map) API ---
+class FPOFarmBoundariesAPIView(BaseAPIView):
+    """All FPO farms in the sidebar selection as a GeoJSON FeatureCollection.
+
+    Takes the same ``state`` / ``district`` / ``farmer`` filters as the
+    overview. Boundaries do not change with the observation date, so this is
+    deliberately not part of the overview — the map can fetch it once per
+    selection instead of on every date change.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        app_user = request.user.appuser
+        if app_user.role != AppUser.Role.FPO:
+            return api_response(
+                success=False,
+                message="This API is available only for FPO users.", code=ResponseCode.FPO_ONLY,
+                result=None,
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        fpo_profile = getattr(app_user, "fpo_profile", None)
+        if not fpo_profile:
+            return api_response(success=False, message="No FPO profile found.", result=None, status_code=403, code=ResponseCode.FPO_PROFILE_NOT_FOUND)
+
+        farms = (
+            filter_fpo_farms(
+                fpo_profile,
+                state=request.query_params.get("state"),
+                district=request.query_params.get("district"),
+                farmer_id=request.query_params.get("farmer"),
+            )
+            .select_related("farmer__farmer_profile")
+            .annotate(centroid=Centroid("boundary"))
+            .prefetch_related(
+                Prefetch(
+                    "crops",
+                    queryset=FarmCrop.objects.filter(is_active=True).select_related("primary_crop"),
+                    to_attr="active_crops",
+                )
+            )
+            .order_by("id")
+        )
+
+        language_code = getattr(request, "language_code", None)
+        features = []
+        for farm in farms:
+            if not farm.boundary:
+                continue
+
+            farmer_profile = farm.farmer.farmer_profile
+            crop = next(iter(farm.active_crops), None)
+
+            features.append(
+                {
+                    "type": "Feature",
+                    "id": farm.id,
+                    "geometry": json.loads(farm.boundary.geojson),
+                    "properties": {
+                        "farm_id": farm.id,
+                        "farm_name": farm.farm_name,
+                        "farmer_id": farmer_profile.id,
+                        "farmer_name": farmer_profile.farmer_name,
+                        "area": farm.area,
+                        "crop_name": crop.primary_crop_localized_name(language_code) if crop else None,
+                        # [lng, lat] — GeoJSON order, ready for a pin layer.
+                        "centroid": [farm.centroid.x, farm.centroid.y] if farm.centroid else None,
+                    },
+                }
+            )
+
+        return api_response(
+            success=True,
+            message="FPO farm boundaries fetched successfully.", code=ResponseCode.FPO_FARM_BOUNDARIES_FETCHED,
+            result={
+                "type": "FeatureCollection",
+                "features": features,
+            },
+            status_code=status.HTTP_200_OK,
         )
