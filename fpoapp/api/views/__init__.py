@@ -8,6 +8,7 @@ from .farmers import (
 )
     
 from .satellite import (
+    FPOFarmBoundariesAPIView,
     FPOOverviewAPIView,
     FPOSatelliteMapLayersView,
     FPOSatelliteOverviewView,
@@ -25,4 +26,5 @@ __all__ = [
     "FPOFarmerListByDistrictView",
     "FPOFarmerFarmsListView",
     "FPOOverviewAPIView",
+    "FPOFarmBoundariesAPIView",
 ]

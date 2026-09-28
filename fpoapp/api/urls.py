@@ -11,6 +11,7 @@ from .views import (
     FPOFarmerListByDistrictView,
     FPOFarmerFarmsListView,
     FPOOverviewAPIView,
+    FPOFarmBoundariesAPIView,
 )
 
 urlpatterns = [
@@ -59,5 +60,10 @@ urlpatterns = [
         "overview/",
         FPOOverviewAPIView.as_view(),
         name="fpo-overview",
+    ),
+    path(
+        "farms/geojson/",
+        FPOFarmBoundariesAPIView.as_view(),
+        name="fpo-farm-boundaries",
     ),
 ]
