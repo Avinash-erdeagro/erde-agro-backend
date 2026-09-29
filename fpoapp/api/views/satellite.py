@@ -25,7 +25,7 @@ from farmerapp.services import (
     fetch_farm_map_layers_by_farm_ids,
     fetch_satellite_metrics_by_farm_ids,
 )
-from fpoapp.utils import filter_fpo_farms
+from fpoapp.utils import filter_fpo_farms, localized_lookup_name
 
 
 class FPOSatelliteOverviewView(BaseAPIView):
@@ -539,7 +539,7 @@ class FPOFarmBoundariesAPIView(BaseAPIView):
                 district=request.query_params.get("district"),
                 farmer_id=request.query_params.get("farmer"),
             )
-            .select_related("farmer__farmer_profile")
+            .select_related("farmer__farmer_profile", "soil_type", "irrigation_type")
             .annotate(centroid=Centroid("boundary"))
             .prefetch_related(
                 Prefetch(
@@ -572,6 +572,9 @@ class FPOFarmBoundariesAPIView(BaseAPIView):
                         "farmer_name": farmer_profile.farmer_name,
                         "area": farm.area,
                         "crop_name": crop.primary_crop_localized_name(language_code) if crop else None,
+                        "plantation_date": crop.plantation_date.isoformat() if crop else None,
+                        "irrigation_type": localized_lookup_name(farm.irrigation_type, language_code),
+                        "soil_type": localized_lookup_name(farm.soil_type, language_code),
                         # [lng, lat] — GeoJSON order, ready for a pin layer.
                         "centroid": [farm.centroid.x, farm.centroid.y] if farm.centroid else None,
                     },

@@ -1,6 +1,18 @@
 from farmerapp.models import Farm
 
 
+def localized_lookup_name(lookup, language_code=None):
+    """Name of a SoilType / IrrigationType / CropType row in the given language,
+    falling back to English when there's no translation."""
+    if lookup is None:
+        return None
+    if language_code and language_code != "en":
+        translated = getattr(lookup, f"name_{language_code}", "")
+        if translated:
+            return translated
+    return lookup.name
+
+
 def filter_fpo_farms(fpo_profile, state=None, district=None, farmer_id=None):
     """Farms of an FPO narrowed to the sidebar selection.
 

@@ -300,6 +300,24 @@ CHART_DEFINITIONS = [
             ("soil_water_potential_root_zone", "Soil Water Potential Root Zone", "soil_water_potential_root_zone"),
         ],
     },
+    {
+        "key": "NET_CARBON_SUPPLY_SOIL",
+        "chart_name": "Net Carbon Supply in Soil",
+        "lines": [
+            ("net_carbon_supply_in_soil_cumulative", "Net Carbon Supply in Soil Cumulative", "net_carbon_supply_in_soil_cumulative"),
+            ("delta_organic_matter_content", "Soil Organic Matter Change Cumulative", "delta_organic_matter_content"),
+        ],
+    },
+    {
+        "key": "AIR_TEMPERATURE_GDU",
+        "chart_name": "Air Temperature and GDU",
+        "lines": [
+            ("air_temperature_max_24", "Max. Air Temp.", "air_temperature_max_24"),
+            ("air_temperature_24", "Avg. Air Temp.", "air_temperature_24"),
+            ("air_temperature_min_24", "Min. Air Temp.", "air_temperature_min_24"),
+            ("thermal_degrees_days_cumulative", "Cumulative GDU", "thermal_degrees_days_cumulative"),
+        ],
+    },
 ]
 
 
