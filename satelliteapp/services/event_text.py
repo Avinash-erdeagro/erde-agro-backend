@@ -10,7 +10,7 @@ language. Both surfaces resolve text here so the copy stays in one place:
 Templates may reference keys from the row's ``details_json`` using ``str.format``
 syntax (e.g. ``{soil_moisture:.0f}``). Missing/invalid values degrade gracefully.
 
-Languages: en, hi, mr, gu, pa, bn, kn, te, ta. A language missing entirely for a
+Languages: en, hi, mr, gu, pa, bn, kn, te, ta, as. A language missing entirely for a
 type falls back to ``en`` at resolve time.
 """
 
@@ -21,7 +21,7 @@ from satelliteapp.models import AlertType, NotificationType
 _GENERIC_TITLE = "Farm Satellite Update"
 _PLACEHOLDER_RE = re.compile(r"\{[^}]*\}")
 
-SUPPORTED_LANGUAGES = ["en", "hi", "mr", "gu", "pa", "bn", "kn", "te", "ta"]
+SUPPORTED_LANGUAGES = ["en", "hi", "mr", "gu", "pa", "bn", "kn", "te", "ta", "as"]
 
 
 # type -> { language_code -> {"title": ..., "body": ...} }
@@ -38,6 +38,7 @@ EVENT_TEXT = {
         "kn": {"title": "ನಿಮ್ಮ ಹೊಲ ಒಣಗುತ್ತಿದೆ", "body": "ಮಣ್ಣಿನ ತೇವಾಂಶ {soil_moisture:.0f}%ಗೆ ಇಳಿದಿದೆ. ಶೀಘ್ರದಲ್ಲೇ ನೀರಾವರಿ ಯೋಜಿಸಿ."},
         "te": {"title": "మీ పొలం ఎండిపోతోంది", "body": "నేల తేమ {soil_moisture:.0f}%కి తగ్గింది. త్వరలో నీటిపారుదల ప్రణాళిక చేయండి."},
         "ta": {"title": "உங்கள் வயல் காய்ந்து வருகிறது", "body": "மண்ணின் ஈரப்பதம் {soil_moisture:.0f}% ஆகக் குறைந்துள்ளது. விரைவில் நீர்ப்பாசனம் திட்டமிடுங்கள்."},
+        "as": {"title": "আপোনাৰ পথাৰ শুকাই আহিছে", "body": "মাটিৰ আৰ্দ্ৰতা কমি {soil_moisture:.0f}% হৈছে। সোনকালে জলসিঞ্চনৰ পৰিকল্পনা কৰক।"},
     },
     NotificationType.MOISTURE_IS_IDEAL: {
         "en": {"title": "Soil moisture is ideal", "body": "Soil moisture is at a healthy {soil_moisture:.0f}%. No irrigation needed right now."},
@@ -49,6 +50,7 @@ EVENT_TEXT = {
         "kn": {"title": "ಮಣ್ಣಿನ ತೇವಾಂಶ ಸೂಕ್ತವಾಗಿದೆ", "body": "ಮಣ್ಣಿನ ತೇವಾಂಶ ಆರೋಗ್ಯಕರ {soil_moisture:.0f}%ನಲ್ಲಿದೆ. ಈಗ ನೀರಾವರಿ ಅಗತ್ಯವಿಲ್ಲ."},
         "te": {"title": "నేల తేమ అనుకూలంగా ఉంది", "body": "నేల తేమ ఆరోగ్యకరమైన {soil_moisture:.0f}% వద్ద ఉంది. ప్రస్తుతం నీటిపారుదల అవసరం లేదు."},
         "ta": {"title": "மண் ஈரப்பதம் சரியாக உள்ளது", "body": "மண்ணின் ஈரப்பதம் ஆரோக்கியமான {soil_moisture:.0f}% இல் உள்ளது. இப்போது நீர்ப்பாசனம் தேவையில்லை."},
+        "as": {"title": "মাটিৰ আৰ্দ্ৰতা উপযুক্ত", "body": "মাটিৰ আৰ্দ্ৰতা সুস্থ {soil_moisture:.0f}% ত আছে। এতিয়া জলসিঞ্চনৰ প্ৰয়োজন নাই।"},
     },
     NotificationType.GROWTH_LOOKS_GREAT: {
         "en": {"title": "Crop growth looks great", "body": "Your crop growth is at {crop_growth:.0f}%. Keep up the good work."},
@@ -60,6 +62,7 @@ EVENT_TEXT = {
         "kn": {"title": "ಬೆಳೆಯ ಬೆಳವಣಿಗೆ ಉತ್ತಮವಾಗಿದೆ", "body": "ನಿಮ್ಮ ಬೆಳೆಯ ಬೆಳವಣಿಗೆ {crop_growth:.0f}%ನಲ್ಲಿದೆ. ಇದೇ ರೀತಿ ಉತ್ತಮ ಕೆಲಸ ಮುಂದುವರಿಸಿ."},
         "te": {"title": "పంట పెరుగుదల చాలా బాగుంది", "body": "మీ పంట పెరుగుదల {crop_growth:.0f}% వద్ద ఉంది. ఇలాగే మంచి పని కొనసాగించండి."},
         "ta": {"title": "பயிர் வளர்ச்சி சிறப்பாக உள்ளது", "body": "உங்கள் பயிர் வளர்ச்சி {crop_growth:.0f}% இல் உள்ளது. இதே போல் தொடருங்கள்."},
+        "as": {"title": "শস্যৰ বৃদ্ধি বৰ ভাল", "body": "আপোনাৰ শস্যৰ বৃদ্ধি {crop_growth:.0f}% ত আছে। এনেদৰে ভাল কাম কৰি থাকক।"},
     },
     NotificationType.MONITOR_FIELD_CLOSELY_CROP_HEALTH: {
         "en": {"title": "Monitor your field closely", "body": "Crop growth is at {crop_growth:.0f}%. Keep a close eye on crop health."},
@@ -71,6 +74,7 @@ EVENT_TEXT = {
         "kn": {"title": "ನಿಮ್ಮ ಹೊಲವನ್ನು ಸೂಕ್ಷ್ಮವಾಗಿ ಗಮನಿಸಿ", "body": "ಬೆಳೆಯ ಬೆಳವಣಿಗೆ {crop_growth:.0f}%ನಲ್ಲಿದೆ. ಬೆಳೆಯ ಆರೋಗ್ಯವನ್ನು ಸೂಕ್ಷ್ಮವಾಗಿ ಗಮನಿಸಿ."},
         "te": {"title": "మీ పొలాన్ని నిశితంగా గమనించండి", "body": "పంట పెరుగుదల {crop_growth:.0f}% వద్ద ఉంది. పంట ఆరోగ్యాన్ని నిశితంగా గమనించండి."},
         "ta": {"title": "உங்கள் வயலை கூர்ந்து கவனியுங்கள்", "body": "பயிர் வளர்ச்சி {crop_growth:.0f}% இல் உள்ளது. பயிரின் ஆரோக்கியத்தை கூர்ந்து கவனியுங்கள்."},
+        "as": {"title": "আপোনাৰ পথাৰ ভালদৰে নিৰীক্ষণ কৰক", "body": "শস্যৰ বৃদ্ধি {crop_growth:.0f}% ত আছে। শস্যৰ স্বাস্থ্যৰ ওপৰত সতৰ্ক দৃষ্টি ৰাখক।"},
     },
     NotificationType.MONITOR_FIELD_CLOSELY_FERTILIZER_LEVELS: {
         "en": {"title": "Check fertilizer levels", "body": "Leaf nitrogen is running low. Consider checking your fertilizer levels."},
@@ -82,6 +86,7 @@ EVENT_TEXT = {
         "kn": {"title": "ಗೊಬ್ಬರದ ಮಟ್ಟವನ್ನು ಪರಿಶೀಲಿಸಿ", "body": "ಎಲೆಯಲ್ಲಿ ಸಾರಜನಕ ಕಡಿಮೆಯಾಗುತ್ತಿದೆ. ನಿಮ್ಮ ಗೊಬ್ಬರದ ಮಟ್ಟವನ್ನು ಪರಿಶೀಲಿಸುವುದನ್ನು ಪರಿಗಣಿಸಿ."},
         "te": {"title": "ఎరువుల స్థాయిని తనిఖీ చేయండి", "body": "ఆకులలో నత్రజని తగ్గుతోంది. మీ ఎరువుల స్థాయిని తనిఖీ చేయడాన్ని పరిగణించండి."},
         "ta": {"title": "உர அளவைச் சரிபார்க்கவும்", "body": "இலையில் நைட்ரஜன் குறைந்து வருகிறது. உங்கள் உர அளவைச் சரிபார்க்கக் கருதுங்கள்."},
+        "as": {"title": "সাৰৰ মাত্ৰা পৰীক্ষা কৰক", "body": "পাতত নাইট্ৰ’জেন কমি আহিছে। আপোনাৰ সাৰৰ মাত্ৰা পৰীক্ষা কৰাৰ কথা বিবেচনা কৰক।"},
     },
     NotificationType.PLAN_IRRIGATION_THIS_WEEK: {
         "en": {"title": "Plan irrigation this week", "body": "Irrigation is recommended this week. Open the app to see the schedule."},
@@ -93,6 +98,7 @@ EVENT_TEXT = {
         "kn": {"title": "ಈ ವಾರ ನೀರಾವರಿ ಯೋಜಿಸಿ", "body": "ಈ ವಾರ ನೀರಾವರಿ ಶಿಫಾರಸು ಮಾಡಲಾಗಿದೆ. ವೇಳಾಪಟ್ಟಿ ನೋಡಲು ಆ್ಯಪ್ ತೆರೆಯಿರಿ."},
         "te": {"title": "ఈ వారం నీటిపారుదల ప్రణాళిక చేయండి", "body": "ఈ వారం నీటిపారుదల సిఫార్సు చేయబడింది. షెడ్యూల్ చూడటానికి యాప్ తెరవండి."},
         "ta": {"title": "இந்த வாரம் நீர்ப்பாசனத்தைத் திட்டமிடுங்கள்", "body": "இந்த வாரம் நீர்ப்பாசனம் பரிந்துரைக்கப்படுகிறது. அட்டவணையைப் பார்க்க ஆப்பைத் திறக்கவும்."},
+        "as": {"title": "এই সপ্তাহত জলসিঞ্চনৰ পৰিকল্পনা কৰক", "body": "এই সপ্তাহত জলসিঞ্চনৰ পৰামৰ্শ দিয়া হৈছে। সময়সূচী চাবলৈ এপটো খোলক।"},
     },
     # --- Alerts ---
     AlertType.CRITICAL_WATER_STRESS: {
@@ -105,6 +111,7 @@ EVENT_TEXT = {
         "kn": {"title": "ತೀವ್ರ ನೀರಿನ ಒತ್ತಡ", "body": "ಮಣ್ಣಿನ ತೇವಾಂಶ ತೀವ್ರವಾಗಿ ಕಡಿಮೆ {soil_moisture:.0f}% ಇದೆ. ಸಾಧ್ಯವಾದಷ್ಟು ಬೇಗ ನೀರಾವರಿ ಮಾಡಿ."},
         "te": {"title": "తీవ్ర నీటి ఒత్తిడి", "body": "నేల తేమ తీవ్రంగా తక్కువగా {soil_moisture:.0f}% ఉంది. వీలైనంత త్వరగా నీటిపారుదల చేయండి."},
         "ta": {"title": "கடுமையான நீர் அழுத்தம்", "body": "மண்ணின் ஈரப்பதம் ஆபத்தான அளவில் குறைவாக {soil_moisture:.0f}% உள்ளது. முடிந்தவரை விரைவில் நீர்ப்பாசனம் செய்யுங்கள்."},
+        "as": {"title": "গুৰুতৰ পানীৰ অভাৱ", "body": "মাটিৰ আৰ্দ্ৰতা গুৰুতৰভাৱে কম, {soil_moisture:.0f}%। যিমান সোনকালে পাৰে জলসিঞ্চন কৰক।"},
     },
     AlertType.OVERWATERING_DETECTED: {
         "en": {"title": "Overwatering detected", "body": "Soil moisture is very high at {soil_moisture:.0f}%. Hold off on irrigation."},
@@ -116,6 +123,7 @@ EVENT_TEXT = {
         "kn": {"title": "ಅತಿಯಾದ ನೀರಾವರಿ ಪತ್ತೆಯಾಗಿದೆ", "body": "ಮಣ್ಣಿನ ತೇವಾಂಶ ತುಂಬಾ ಹೆಚ್ಚು {soil_moisture:.0f}% ಇದೆ. ಸದ್ಯಕ್ಕೆ ನೀರಾವರಿ ನಿಲ್ಲಿಸಿ."},
         "te": {"title": "అధిక నీటిపారుదల గుర్తించబడింది", "body": "నేల తేమ చాలా ఎక్కువగా {soil_moisture:.0f}% ఉంది. ప్రస్తుతానికి నీటిపారుదల ఆపండి."},
         "ta": {"title": "அதிக நீர்ப்பாசனம் கண்டறியப்பட்டது", "body": "மண்ணின் ஈரப்பதம் மிக அதிகமாக {soil_moisture:.0f}% உள்ளது. தற்போதைக்கு நீர்ப்பாசனத்தை நிறுத்துங்கள்."},
+        "as": {"title": "অতিৰিক্ত জলসিঞ্চন ধৰা পৰিছে", "body": "মাটিৰ আৰ্দ্ৰতা অতি বেছি, {soil_moisture:.0f}%। এতিয়াৰ বাবে জলসিঞ্চন বন্ধ ৰাখক।"},
     },
     AlertType.CROP_HEALTH_DROPPING: {
         "en": {"title": "Crop health is dropping", "body": "Crop growth has been declining over the last {days_considered} readings. Inspect your field."},
@@ -127,6 +135,7 @@ EVENT_TEXT = {
         "kn": {"title": "ಬೆಳೆಯ ಆರೋಗ್ಯ ಕುಸಿಯುತ್ತಿದೆ", "body": "ಕಳೆದ {days_considered} ವಾಚನಗಳಲ್ಲಿ ಬೆಳೆಯ ಬೆಳವಣಿಗೆ ಕುಸಿಯುತ್ತಿದೆ. ನಿಮ್ಮ ಹೊಲವನ್ನು ಪರಿಶೀಲಿಸಿ."},
         "te": {"title": "పంట ఆరోగ్యం క్షీణిస్తోంది", "body": "గత {days_considered} రీడింగ్‌లలో పంట పెరుగుదల క్షీణిస్తోంది. మీ పొలాన్ని పరిశీలించండి."},
         "ta": {"title": "பயிர் ஆரோக்கியம் குறைந்து வருகிறது", "body": "கடந்த {days_considered} அளவீடுகளில் பயிர் வளர்ச்சி குறைந்து வருகிறது. உங்கள் வயலை ஆய்வு செய்யுங்கள்."},
+        "as": {"title": "শস্যৰ স্বাস্থ্য বেয়া হৈ আহিছে", "body": "যোৱা {days_considered}টা পৰ্যবেক্ষণত শস্যৰ বৃদ্ধি কমি আহিছে। আপোনাৰ পথাৰ পৰিদৰ্শন কৰক।"},
     },
     AlertType.RAIN_ALERT_SKIP_IRRIGATION: {
         "en": {"title": "Rain expected — skip irrigation", "body": "Rain is forecast in the coming days. You can skip irrigation for now."},
@@ -138,6 +147,7 @@ EVENT_TEXT = {
         "kn": {"title": "ಮಳೆ ನಿರೀಕ್ಷೆ — ನೀರಾವರಿ ಬಿಟ್ಟುಬಿಡಿ", "body": "ಮುಂಬರುವ ದಿನಗಳಲ್ಲಿ ಮಳೆಯ ಮುನ್ಸೂಚನೆ ಇದೆ. ಸದ್ಯಕ್ಕೆ ನೀವು ನೀರಾವರಿ ಬಿಟ್ಟುಬಿಡಬಹುದು."},
         "te": {"title": "వర్షం అంచనా — నీటిపారుదల వదిలేయండి", "body": "రాబోయే రోజుల్లో వర్షం సూచన ఉంది. ప్రస్తుతానికి మీరు నీటిపారుదల వదిలేయవచ్చు."},
         "ta": {"title": "மழை எதிர்பார்ப்பு — நீர்ப்பாசனத்தைத் தவிர்க்கவும்", "body": "வரும் நாட்களில் மழை பெய்யும் என்று கணிக்கப்படுகிறது. தற்போதைக்கு நீங்கள் நீர்ப்பாசனத்தைத் தவிர்க்கலாம்."},
+        "as": {"title": "বৰষুণৰ সম্ভাৱনা — জলসিঞ্চন নকৰিব", "body": "আগন্তুক দিনবোৰত বৰষুণৰ পূৰ্বাভাস আছে। এতিয়াৰ বাবে আপুনি জলসিঞ্চন বাদ দিব পাৰে।"},
     },
 }
 

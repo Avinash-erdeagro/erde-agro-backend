@@ -10,6 +10,7 @@ TRANSLATION_FIELDS = [
     ("name_kn", "Kannada"),
     ("name_te", "Telugu"),
     ("name_ta", "Tamil"),
+    ("name_as", "Assamese"),
 ]
 
 
@@ -24,6 +25,7 @@ class SoilType(models.Model):
     name_kn = models.CharField(max_length=150, blank=True, default="")
     name_te = models.CharField(max_length=150, blank=True, default="")
     name_ta = models.CharField(max_length=150, blank=True, default="")
+    name_as = models.CharField(max_length=150, blank=True, default="")
 
     def __str__(self):
         return self.name
@@ -40,6 +42,7 @@ class IrrigationType(models.Model):
     name_kn = models.CharField(max_length=150, blank=True, default="")
     name_te = models.CharField(max_length=150, blank=True, default="")
     name_ta = models.CharField(max_length=150, blank=True, default="")
+    name_as = models.CharField(max_length=150, blank=True, default="")
 
     def __str__(self):
         return self.name
@@ -56,6 +59,7 @@ class CropType(models.Model):
     name_kn = models.CharField(max_length=150, blank=True, default="")
     name_te = models.CharField(max_length=150, blank=True, default="")
     name_ta = models.CharField(max_length=150, blank=True, default="")
+    name_as = models.CharField(max_length=150, blank=True, default="")
 
     def __str__(self):
         return self.name

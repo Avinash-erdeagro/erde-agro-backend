@@ -5,19 +5,19 @@ from .models import SoilType, IrrigationType, CropType, Farm, FarmCrop, FarmSate
 @admin.register(SoilType)
 class SoilTypeAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "irriwatch_id", "name_hi", "name_mr")
-    search_fields = ("name", "name_hi", "name_mr", "name_gu", "name_pa", "name_bn", "name_kn", "name_te", "name_ta")
+    search_fields = ("name", "name_hi", "name_mr", "name_gu", "name_pa", "name_bn", "name_kn", "name_te", "name_ta", "name_as")
 
 
 @admin.register(IrrigationType)
 class IrrigationTypeAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "irriwatch_id", "name_hi", "name_mr")
-    search_fields = ("name", "name_hi", "name_mr", "name_gu", "name_pa", "name_bn", "name_kn", "name_te", "name_ta")
+    search_fields = ("name", "name_hi", "name_mr", "name_gu", "name_pa", "name_bn", "name_kn", "name_te", "name_ta", "name_as")
 
 
 @admin.register(CropType)
 class CropTypeAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "irriwatch_id", "name_hi", "name_mr")
-    search_fields = ("name", "name_hi", "name_mr", "name_gu", "name_pa", "name_bn", "name_kn", "name_te", "name_ta")
+    search_fields = ("name", "name_hi", "name_mr", "name_gu", "name_pa", "name_bn", "name_kn", "name_te", "name_ta", "name_as")
 
 
 class FarmCropInline(admin.TabularInline):

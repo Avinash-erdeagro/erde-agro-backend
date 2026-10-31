@@ -20,6 +20,7 @@ class AppUser(models.Model):
 		KANNADA = "kn", "Kannada"
 		TELUGU = "te", "Telugu"
 		TAMIL = "ta", "Tamil"
+		ASSAMESE = "as", "Assamese"
 
 	user = models.OneToOneField(User, on_delete=models.CASCADE)
 	role = models.CharField(max_length=20, choices=Role.choices)

@@ -17,6 +17,7 @@ LANGUAGE_COLUMN_MAP = {
     "Kannada": "name_kn",
     "Telugu": "name_te",
     "Tamil": "name_ta",
+    "Assamese": "name_as",
 }
 
 SHEET_CONFIG = [
