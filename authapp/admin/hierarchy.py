@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db.models import Count
 
 from authapp.models.hierarchy import (
     HierarchyLevel,
@@ -6,6 +7,7 @@ from authapp.models.hierarchy import (
     OrgUnit,
     OrgUnitFPO,
     Organization,
+    FieldOfficer
 )
 
 
@@ -63,3 +65,18 @@ class OrgUnitFPOAdmin(admin.ModelAdmin):
     list_filter = ["org_unit__organization"]
     search_fields = ["fpo_profile__fpo_name", "org_unit__name"]
     raw_id_fields = ["fpo_profile", "org_unit"]
+
+
+@admin.register(FieldOfficer)
+class FieldOfficerAdmin(admin.ModelAdmin):
+    list_display = ["id", "officer_code", "name", "mobile", "org_unit", "is_active", "farmer_count", "created_at"]
+    list_filter = ["org_unit__organization", "is_active"]
+    search_fields = ["officer_code", "name", "mobile"]
+    raw_id_fields = ["org_unit"]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(_farmer_count=Count("registered_farmers"))
+
+    @admin.display(description="Farmers", ordering="_farmer_count")
+    def farmer_count(self, obj):
+        return obj._farmer_count

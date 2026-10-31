@@ -62,5 +62,14 @@ class FarmerProfile(models.Model):
 	aadhaar_number = models.CharField(max_length=50)
 	aadhaar_file = models.FileField(upload_to="documents/farmer/aadhaar/", null=True, blank=True)
 
+	added_by_field_officer = models.ForeignKey(
+                "authapp.FieldOfficer",
+                on_delete=models.SET_NULL,
+                null=True,
+                blank=True,
+                related_name="registered_farmers",
+        )
+	created_at = models.DateTimeField(auto_now_add=True, null=True)
+
 	def __str__(self) -> str:
 		return self.farmer_name

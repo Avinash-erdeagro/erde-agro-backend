@@ -1,7 +1,7 @@
 from .locality import Locality
 from .user import AppUser
 from .profiles import FarmerProfile, FpoProfile
-from .hierarchy import Organization, HierarchyLevel, OrgUnit, OrgMembership, OrgUnitFPO
+from .hierarchy import Organization, HierarchyLevel, OrgUnit, OrgMembership, OrgUnitFPO, FieldOfficer
 
 __all__ = [
     "Locality",
@@ -13,4 +13,5 @@ __all__ = [
     "OrgUnit",
     "OrgMembership",
     "OrgUnitFPO",
+    "FieldOfficer"
 ]

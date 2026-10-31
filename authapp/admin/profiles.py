@@ -19,5 +19,6 @@ class FpoProfileAdmin(admin.ModelAdmin):
 
 @admin.register(FarmerProfile)
 class FarmerProfileAdmin(admin.ModelAdmin):
-    list_display = ("id", "farmer_name", "app_user", "contact_number", "locality")
+    list_display = ("id", "farmer_name", "app_user", "contact_number", "locality", "added_by_field_officer", "created_at")
+    list_filter = ("added_by_field_officer__org_unit__organization", "added_by_field_officer")
     search_fields = ("farmer_name", "contact_number", "aadhaar_number")

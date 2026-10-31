@@ -130,3 +130,31 @@ class OrgUnitFPO(models.Model):
 
     def __str__(self) -> str:
         return f"FPO {self.fpo_profile} → {self.org_unit}"
+
+
+class FieldOfficer(models.Model):
+    """
+    A field agent of an Organization who registers farmers without a login.
+    Identified only by officer_code, which they enter during farmer sign-up.
+    """
+
+    org_unit = models.ForeignKey(
+        OrgUnit,
+        on_delete=models.PROTECT,
+        related_name="field_officers",
+    )
+    name = models.CharField(max_length=255)
+    mobile = models.CharField(max_length=13, blank=True, default="")
+    officer_code = models.CharField(max_length=20, unique=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["org_unit", "name"]
+
+    def save(self, *args, **kwargs):
+        self.officer_code = self.officer_code.strip().upper()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.officer_code} – {self.name}"
