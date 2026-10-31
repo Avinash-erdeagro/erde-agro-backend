@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .locality import LocalitySerializer
-from authapp.models import FarmerProfile, FpoProfile
+from authapp.models import FarmerProfile, FieldOfficer, FpoProfile
 from authapp.services import get_or_create_locality, normalize_indian_phone_number
 
 class FpoProfileSerializer(serializers.ModelSerializer):
@@ -96,6 +96,9 @@ class FarmerMyProfileSerializer(serializers.ModelSerializer):
     registered_with_fpo = serializers.PrimaryKeyRelatedField(
         queryset=FpoProfile.objects.all(), required=False, allow_null=True
     )
+    field_officer_code = serializers.CharField(
+        write_only=True, required=False, allow_blank=True
+    )
 
     class Meta:
         model = FarmerProfile
@@ -107,13 +110,31 @@ class FarmerMyProfileSerializer(serializers.ModelSerializer):
             "aadhaar_number",
             "aadhaar_file",
             "locality",
+            "field_officer_code",
         ]
         read_only_fields = ["id", "contact_number"]
 
+    def validate_field_officer_code(self, value):
+        code = value.strip().upper()
+        if not code:
+            return None
+
+        officer = FieldOfficer.objects.filter(officer_code=code, is_active=True).first()
+        if not officer:
+            raise serializers.ValidationError("Invalid field officer code.")
+
+        current_id = self.instance.added_by_field_officer_id if self.instance else None
+        if current_id and current_id != officer.id:
+            raise serializers.ValidationError("A field officer is already linked to this farmer.")
+        return officer
+
     def update(self, instance, validated_data):
         locality_data = validated_data.pop("locality", None)
+        officer = validated_data.pop("field_officer_code", None)
         if locality_data is not None:
             instance.locality = get_or_create_locality(locality_data)
+        if officer is not None:
+            instance.added_by_field_officer = officer
         return super().update(instance, validated_data)
 
     def to_representation(self, instance):
@@ -123,6 +144,11 @@ class FarmerMyProfileSerializer(serializers.ModelSerializer):
                 "id": instance.registered_with_fpo.id,
                 "fpo_name": instance.registered_with_fpo.fpo_name,
             }
+        officer = instance.added_by_field_officer
+        rep["field_officer"] = (
+            {"officer_code": officer.officer_code, "name": officer.name}
+            if officer else None
+        )
         return rep
 
 

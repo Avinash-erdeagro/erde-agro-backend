@@ -55,7 +55,7 @@ class FarmerMyProfileView(BaseAPIView):
                 status_code=status.HTTP_403_FORBIDDEN,
             )
         profile = FarmerProfile.objects.select_related(
-            "locality", "registered_with_fpo"
+            "locality", "registered_with_fpo", "added_by_field_officer"
         ).filter(app_user=app_user).first()
         if not profile:
             return None, api_response(
