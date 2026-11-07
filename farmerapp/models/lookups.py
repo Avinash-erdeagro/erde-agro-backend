@@ -16,7 +16,7 @@ TRANSLATION_FIELDS = [
 
 class SoilType(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    irriwatch_id = models.IntegerField(unique=True, null=True, blank=True)
+    irriwatch_id = models.IntegerField(null=True, blank=True)
     name_hi = models.CharField(max_length=150, blank=True, default="")
     name_mr = models.CharField(max_length=150, blank=True, default="")
     name_gu = models.CharField(max_length=150, blank=True, default="")
