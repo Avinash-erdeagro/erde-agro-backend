@@ -6,7 +6,9 @@ from datetime import datetime
 
 from celery import current_app
 from django.db import transaction
+from django.utils import timezone
 
+from farmerapp.models import FarmSatelliteSubscription, SatelliteSubscriptionStatus
 from notificationapp.services import send_pending_satellite_notifications
 from satelliteapp.models import (
     Order,
@@ -129,6 +131,20 @@ def _process_result_date(company_uuid, order_uuid, result_uuid, obs_date):
             sync_alerts_for_result(result_record)
             created = sync_notifications_for_result(result_record)
             created_notification_ids.extend(notif.id for notif in created)
+
+        # First data received for a submitted farm -> it's now SYNCING.
+        synced_field_uuids = [r.order_farm.irriwatch_field_uuid for r in created_results]
+        if synced_field_uuids:
+            moved = FarmSatelliteSubscription.objects.filter(
+                irriwatch_field_uuid__in=synced_field_uuids,
+                status=SatelliteSubscriptionStatus.SUBMITTED,
+            ).update(status=SatelliteSubscriptionStatus.SYNCING, updated_at=timezone.now())
+            if moved:
+                logger.info(
+                    "Moved %s subscriptions SUBMITTED -> SYNCING order_uuid=%s",
+                    moved,
+                    order_uuid,
+                )
 
     # Enqueue heavy TIFF -> PNG map-layer rendering AFTER commit (out of the txn).
     # Sent by task name to avoid an ingest <-> tasks import cycle.

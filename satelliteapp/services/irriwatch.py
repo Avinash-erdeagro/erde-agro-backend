@@ -99,6 +99,18 @@ def download_result_zip(company_uuid, order_uuid, result_uuid):
     return response.content
 
 
+def create_order(company_uuid, feature_collection):
+    """Create an IrriWatch order for a GeoJSON FeatureCollection of fields."""
+    response = requests.post(
+        f"{settings.IRRIWATCH_BASE_URL}/company/{company_uuid}/order",
+        headers=_headers(),
+        json={"fields": feature_collection},
+        timeout=settings.IRRIWATCH_HTTP_TIMEOUT,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
 # --- S3 upload --------------------------------------------------------------
 def upload_tif_to_s3(tif_bytes, field_uuid, observation_date):
     """Upload a GeoTIFF to the dedicated satellite bucket, return its URL."""
