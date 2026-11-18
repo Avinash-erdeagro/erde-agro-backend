@@ -5,6 +5,7 @@ import zipfile
 from datetime import datetime
 
 from celery import current_app
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
@@ -192,10 +193,21 @@ def _extract_zip(zip_bytes, obs_date):
             with zf.open("field-data.json") as f:
                 field_data = json.load(f)
 
-        for filename in names:
-            if not filename.endswith(".tif"):
-                continue
+        tif_names = [name for name in names if name.endswith(".tif")]
 
+        # Local-only sync: drop fields (metrics + TIFFs) that don't belong to a
+        # farm subscribed in this DB, before anything is uploaded to S3.
+        if settings.SATELLITE_SYNC_LOCAL_FARMS_ONLY:
+            candidates = set(field_data) | {n[: -len(".tif")] for n in tif_names}
+            local_uuids = set(
+                FarmSatelliteSubscription.objects.filter(
+                    irriwatch_field_uuid__in=candidates
+                ).values_list("irriwatch_field_uuid", flat=True)
+            )
+            field_data = {k: v for k, v in field_data.items() if k in local_uuids}
+            tif_names = [n for n in tif_names if n[: -len(".tif")] in local_uuids]
+
+        for filename in tif_names:
             field_uuid = filename[: -len(".tif")]
             tif_bytes = zf.read(filename)
             tif_urls[field_uuid] = upload_tif_to_s3(tif_bytes, field_uuid, obs_date)
