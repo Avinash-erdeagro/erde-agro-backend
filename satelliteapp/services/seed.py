@@ -1,5 +1,5 @@
 import logging
-
+from django.conf import settings
 from farmerapp.models import FarmSatelliteSubscription
 from satelliteapp.models import (
     Company,
@@ -43,21 +43,36 @@ def run():
         for order in orders:
             order_status = _map_order_status(order.get("state"))
 
+            features = order.get("fields", {}).get("features", [])
+            field_uuids = [
+                f.get("properties", {}).get("uuid")
+                for f in features
+                if f.get("properties", {}).get("uuid")
+            ]
+
+            subs_by_uuid = {
+                sub.irriwatch_field_uuid: sub
+                for sub in FarmSatelliteSubscription.objects.filter(
+                    irriwatch_field_uuid__in=field_uuids
+                ).select_related("farm")
+            }
+
+            if settings.SATELLITE_SYNC_LOCAL_FARMS_ONLY:
+                field_uuids = [u for u in field_uuids if u in subs_by_uuid]
+                if not field_uuids:
+                    logger.info(
+                        "Local-only sync: no local farms in order uuid=%s, skipping",
+                        order["uuid"],
+                    )
+                    continue
+
             db_order, _ = Order.objects.update_or_create(
                 irriwatch_order_uuid=order["uuid"],
                 defaults={"company": db_company, "status": order_status},
             )
 
-            features = order.get("fields", {}).get("features", [])
-            for feature in features:
-                field_uuid = feature.get("properties", {}).get("uuid")
-                if not field_uuid:
-                    continue
-
-                sub = FarmSatelliteSubscription.objects.filter(
-                    irriwatch_field_uuid=field_uuid
-                ).first()
-
+            for field_uuid in field_uuids:
+                sub = subs_by_uuid.get(field_uuid)
                 OrderFarm.objects.update_or_create(
                     irriwatch_field_uuid=field_uuid,
                     defaults={

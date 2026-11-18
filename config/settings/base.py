@@ -156,6 +156,9 @@ IRRIWATCH_ORDER_COMPANY_UUID = config(
 # S3 bucket for satellite GeoTIFF uploads (dedicated bucket; required)
 SATELLITE_DATA_S3_BUCKET = config("SATELLITE_DATA_S3_BUCKET")
 
+# When True, seed/ingest only handle IrriWatch fields that match a local
+# FarmSatelliteSubscription. Off in prod (full sync), on in dev.
+SATELLITE_SYNC_LOCAL_FARMS_ONLY = False
 
 # Celery
 CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
