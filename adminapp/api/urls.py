@@ -19,6 +19,7 @@ from adminapp.views import (
     HierarchyFarmerDetailView,
     HierarchyFarmerListView,
     # Stats
+    FPOAreaStatsView,
     FPOStatsView,
     PlatformOverviewStatsView,
     # Notifications
@@ -55,6 +56,7 @@ urlpatterns = [
     # ── Stats ─────────────────────────────────────────────────────────────────
     path("stats/overview/", PlatformOverviewStatsView.as_view(), name="stats-overview"),
     path("stats/fpos/", FPOStatsView.as_view(), name="stats-fpos"),
+    path("stats/fpo-area/", FPOAreaStatsView.as_view(), name="stats-fpo-area"),
 
     # ── Notifications ─────────────────────────────────────────────────────────
     path("notifications/device-tokens/", DeviceTokenStatsView.as_view(), name="notif-tokens"),

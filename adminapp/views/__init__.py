@@ -19,7 +19,7 @@ from .org_data import (
     HierarchyFarmerListView,
 )
 from .payments import FPOSubscriptionDetailView, SatellitePlanListView, SubscriptionSummaryView
-from .stats import FPOStatsView, PlatformOverviewStatsView
+from .stats import FPOAreaStatsView, FPOStatsView, PlatformOverviewStatsView
 
 __all__ = [
     # Hierarchy management
@@ -42,6 +42,7 @@ __all__ = [
     # Stats
     "PlatformOverviewStatsView",
     "FPOStatsView",
+    "FPOAreaStatsView",
     # Notifications
     "DeviceTokenStatsView",
     "UserNotificationCoverageView",

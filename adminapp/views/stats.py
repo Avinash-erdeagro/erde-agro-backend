@@ -4,7 +4,7 @@ Platform stats views — SUPER_ADMIN only.
 Aggregates counts and summaries across all apps. Add new stat endpoints here.
 """
 
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q, Sum
 from rest_framework.views import APIView
 
 from authapp.api.permissions import IsSuperAdmin
@@ -15,6 +15,7 @@ from authapp.models.hierarchy import OrgMembership, OrgUnit, OrgUnitFPO, Organiz
 from billingapp.models import SatellitePlan
 from farmerapp.models import Farm, FarmSatelliteSubscription, SatelliteSubscriptionStatus
 from notificationapp.models import DeviceToken
+from satelliteapp.models.provider import SatelliteResult
 
 
 class PlatformOverviewStatsView(APIView):
@@ -143,5 +144,45 @@ class FPOStatsView(APIView):
         return api_response(
             success=True,
             message="FPO stats.", code=ResponseCode.FPO_STATS,
+            result=result,
+        )
+
+
+class FPOAreaStatsView(APIView):
+    """
+    GET /super-admin/stats/fpo-area/
+
+    Per-FPO total mapped area vs area with satellite data (acres).
+    """
+    permission_classes = [IsSuperAdmin]
+
+    def get(self, request):
+        fpo_field = "farmer__farmer_profile__registered_with_fpo"
+        farms = Farm.objects.filter(**{f"{fpo_field}__isnull": False})
+
+        mapped_by_fpo = dict(
+            farms.values_list(fpo_field).annotate(total=Sum("area"))
+        )
+        satellite_by_fpo = dict(
+            farms.filter(
+                Exists(SatelliteResult.objects.filter(order_farm__farm=OuterRef("pk")))
+            )
+            .values_list(fpo_field)
+            .annotate(total=Sum("area"))
+        )
+
+        result = [
+            {
+                "fpo_id": fpo.pk,
+                "fpo_name": fpo.fpo_name,
+                "mapped_area_acres": round(mapped_by_fpo.get(fpo.pk) or 0, 2),
+                "satellite_area_acres": round(satellite_by_fpo.get(fpo.pk) or 0, 2),
+            }
+            for fpo in FpoProfile.objects.only("id", "fpo_name").order_by("fpo_name")
+        ]
+
+        return api_response(
+            success=True,
+            message="FPO area stats.", code=ResponseCode.FPO_STATS,
             result=result,
         )
