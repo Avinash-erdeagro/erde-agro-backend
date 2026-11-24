@@ -16,7 +16,7 @@ import logging
 from django.db.models import Q
 
 from authapp.models import ClientProfile, FarmerProfile, OrgUnitFPO
-from farmerapp.models import Farm
+from farmerapp.models import Farm, FarmCrop
 
 logger = logging.getLogger(__name__)
 
@@ -55,19 +55,50 @@ def get_client_fpo_ids(client: ClientProfile) -> set[int]:
     return fpo_ids
 
 
-def get_client_farmers(client: ClientProfile):
-    """FarmerProfiles registered with any in-scope FPO."""
-    fpo_ids = get_client_fpo_ids(client)
-    if not fpo_ids:
-        return FarmerProfile.objects.none()
-    return FarmerProfile.objects.filter(registered_with_fpo_id__in=fpo_ids)
-
-
 def get_client_farms(client: ClientProfile):
-    """Farms belonging to farmers of any in-scope FPO."""
+    """
+    Farms the client can see:
+      source  - farms of farmers registered with any in-scope FPO
+      filter  - if scope.crop_types is set, only farms whose active
+                primary crop is one of them
+    """
     fpo_ids = get_client_fpo_ids(client)
     if not fpo_ids:
         return Farm.objects.none()
-    return Farm.objects.filter(
+
+    farms = Farm.objects.filter(
         farmer__farmer_profile__registered_with_fpo_id__in=fpo_ids
     )
+
+    # Non-empty fpo_ids implies client.scope exists.
+    crop_type_ids = list(client.scope.crop_types.values_list("pk", flat=True))
+    if crop_type_ids:
+        farms = farms.filter(
+            pk__in=FarmCrop.objects.filter(
+                is_active=True,
+                primary_crop_id__in=crop_type_ids,
+            ).values("farm_id")
+        )
+
+    return farms
+
+
+def get_client_farmers(client: ClientProfile):
+    """
+    Farmers the client can see:
+      - no filters set: every farmer registered with an in-scope FPO
+        (including farmers who have not mapped a farm yet)
+      - filters set:    only farmers with at least one in-scope farm
+    """
+    fpo_ids = get_client_fpo_ids(client)
+    if not fpo_ids:
+        return FarmerProfile.objects.none()
+
+    farmers = FarmerProfile.objects.filter(registered_with_fpo_id__in=fpo_ids)
+
+    if client.scope.crop_types.exists():
+        farmers = farmers.filter(
+            app_user_id__in=get_client_farms(client).values("farmer_id")
+        )
+
+    return farmers
