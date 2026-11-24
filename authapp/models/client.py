@@ -36,8 +36,11 @@ class ClientScope(models.Model):
       - org_units: every FPO linked to these units or any unit below them
                    (e.g. an HO unit covers all its District Heads' FPOs).
                    New FPOs linked under them are included automatically.
+      An FPO is in the source if it matches either list.
 
-    Both lists are combined: an FPO is in scope if it matches either.
+    Filters (optional, narrow the source; empty = no filtering):
+      - crop_types: farms whose active primary crop is one of these.
+                    Intercrops and free-text crop names do not match.
     """
 
     client = models.OneToOneField(
@@ -54,6 +57,12 @@ class ClientScope(models.Model):
         "authapp.OrgUnit",
         related_name="client_scopes",
         blank=True,
+    )
+    crop_types = models.ManyToManyField(
+        "farmerapp.CropType",
+        related_name="client_scopes",
+        blank=True,
+        help_text="Only farms whose active primary crop is one of these. Empty = all crops.",
     )
     updated_at = models.DateTimeField(auto_now=True)
 

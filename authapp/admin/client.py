@@ -8,9 +8,12 @@ class ClientScopeInline(admin.StackedInline):
     can_delete = False
     extra = 1
     max_num = 1
-    filter_horizontal = ("org_units", "fpos")
+    filter_horizontal = ("org_units", "fpos", "crop_types")
     verbose_name_plural = "Scope (what this client can see)"
-    help_text = "Pick org units (includes everything below them) and/or individual FPOs."
+    help_text = (
+        "Source: pick org units (includes everything below them) and/or individual FPOs. "
+        "Filter: pick crop types to limit to farms with that active primary crop (empty = all crops)."
+    )
 
 
 @admin.register(ClientProfile)
