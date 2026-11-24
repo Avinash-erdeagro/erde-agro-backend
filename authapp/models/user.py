@@ -9,6 +9,7 @@ class AppUser(models.Model):
 		ORG_USER = "ORG_USER", "Org User"
 		FPO = "FPO", "FPO"
 		FARMER = "FARMER", "FARMER"
+		CLIENT = "CLIENT", "Client"
 
 	class PreferredLanguage(models.TextChoices):
 		ENGLISH = "en", "English"
