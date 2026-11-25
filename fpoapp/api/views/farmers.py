@@ -11,13 +11,14 @@ from fpoapp.api.serializers import (
     FPOFarmerListSerializer,
 )
 from fpoapp.services import create_farmer_under_fpo
+from fpoapp.api.views.scope import FPOFarmerScopeMixin
 from farmerapp.models import FarmCrop
 from farmerapp.api.serializers.lookups import CropTypeSerializer
 from django.db.models import Count, Prefetch, OuterRef, Exists
 from satelliteapp.models import SatelliteFarmAlert, SatelliteFarmNotification
 from datetime import datetime, timedelta
 
-class FPOBaseAPIView(BaseAPIView):
+class FPOBaseAPIView(FPOFarmerScopeMixin, BaseAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_fpo_profile(self):
@@ -108,9 +109,9 @@ class FPOFarmerContactListView(FPOBaseAPIView):
 # Filter States endpoint for farmers registered under the FPO
 class FPOFarmerFilterStateView(FPOBaseAPIView):
     def get(self, request):
-        fpo_profile = self.ensure_fpo_profile()
-        if not isinstance(fpo_profile, FpoProfile):
-            return fpo_profile
+        farmer_scope = self.get_farmer_scope()
+        if farmer_scope is None:
+            return self.scope_denied_response()
 
         # Get & validate observation_date
         observation_date = request.query_params.get("observation_date")
@@ -138,23 +139,22 @@ class FPOFarmerFilterStateView(FPOBaseAPIView):
 
         # Subquery alerts
         alerts_subquery = SatelliteFarmAlert.objects.filter(
-            order_farm__farm__farmer__farmer_profile__registered_with_fpo=fpo_profile,
+            order_farm__farm__farmer__farmer_profile__in=farmer_scope,
             order_farm__farm__farmer__farmer_profile__locality__state=OuterRef("locality__state"),
             observation_date=observation_date
         )
 
         # Subquery notifications
         notifications_subquery = SatelliteFarmNotification.objects.filter(
-            order_farm__farm__farmer__farmer_profile__registered_with_fpo=fpo_profile,
+            order_farm__farm__farmer__farmer_profile__in=farmer_scope,
             order_farm__farm__farmer__farmer_profile__locality__state=OuterRef("locality__state"),
             observation_date=observation_date
         )
 
         # Main query
         states = (
-            FarmerProfile.objects
+            farmer_scope
             .filter(
-                registered_with_fpo=fpo_profile,
                 locality__state__isnull=False
             )
             .exclude(locality__state="")
@@ -177,9 +177,9 @@ class FPOFarmerFilterStateView(FPOBaseAPIView):
 # Filter Districts for a given state for farmers registered under the FPO
 class FPOFarmerDistrictListView(FPOBaseAPIView):
     def get(self, request, state):
-        fpo_profile = self.ensure_fpo_profile()
-        if not isinstance(fpo_profile, FpoProfile):
-            return fpo_profile
+        farmer_scope = self.get_farmer_scope()
+        if farmer_scope is None:
+            return self.scope_denied_response()
 
         # Get & validate observation_date
         observation_date = request.query_params.get("observation_date")
@@ -203,7 +203,7 @@ class FPOFarmerDistrictListView(FPOBaseAPIView):
 
         # 🔹 Alerts subquery
         alerts_subquery = SatelliteFarmAlert.objects.filter(
-            order_farm__farm__farmer__farmer_profile__registered_with_fpo=fpo_profile,
+            order_farm__farm__farmer__farmer_profile__in=farmer_scope,
             order_farm__farm__farmer__farmer_profile__locality__district=OuterRef("locality__district"),
             order_farm__farm__farmer__farmer_profile__locality__state__iexact=state,
             observation_date=observation_date
@@ -211,16 +211,15 @@ class FPOFarmerDistrictListView(FPOBaseAPIView):
 
         # 🔹 Notifications subquery
         notifications_subquery = SatelliteFarmNotification.objects.filter(
-            order_farm__farm__farmer__farmer_profile__registered_with_fpo=fpo_profile,
+            order_farm__farm__farmer__farmer_profile__in=farmer_scope,
             order_farm__farm__farmer__farmer_profile__locality__district=OuterRef("locality__district"),
             order_farm__farm__farmer__farmer_profile__locality__state__iexact=state,
             observation_date=observation_date
         )
 
         districts = (
-            FarmerProfile.objects
+            farmer_scope
             .filter(
-                registered_with_fpo=fpo_profile,
                 locality__state__iexact=state,
                 locality__district__isnull=False
             )
@@ -244,9 +243,9 @@ class FPOFarmerDistrictListView(FPOBaseAPIView):
 # List farmers for a given state and district for farmers registered under the FPO, along with alert/notification status
 class FPOFarmerListByDistrictView(FPOBaseAPIView):
     def get(self, request, state, district):
-        fpo_profile = self.ensure_fpo_profile()
-        if not isinstance(fpo_profile, FpoProfile):
-            return fpo_profile
+        farmer_scope = self.get_farmer_scope()
+        if farmer_scope is None:
+            return self.scope_denied_response()
 
         # ✅ Get & validate observation_date
         observation_date = request.query_params.get("observation_date")
@@ -282,9 +281,8 @@ class FPOFarmerListByDistrictView(FPOBaseAPIView):
         )
 
         farmers = (
-            FarmerProfile.objects
+            farmer_scope
             .filter(
-                registered_with_fpo=fpo_profile,
                 locality__state__iexact=state,
                 locality__district__iexact=district,
             )
@@ -313,9 +311,9 @@ class FPOFarmerListByDistrictView(FPOBaseAPIView):
 # Farms for a given farmer_id for farmers registered under the FPO, along with alert/notification status for the given observation_date
 class FPOFarmerFarmsListView(FPOBaseAPIView):
     def get(self, request, farmer_id):
-        fpo_profile = self.ensure_fpo_profile()
-        if not isinstance(fpo_profile, FpoProfile):
-            return fpo_profile
+        farmer_scope = self.get_farmer_scope()
+        if farmer_scope is None:
+            return self.scope_denied_response()
 
         # ✅ Get & validate observation_date
         observation_date = request.query_params.get("observation_date")
@@ -340,10 +338,7 @@ class FPOFarmerFarmsListView(FPOBaseAPIView):
             )
 
         try:
-            farmer = FarmerProfile.objects.select_related("app_user").get(
-                id=farmer_id,
-                registered_with_fpo=fpo_profile
-            )
+            farmer = farmer_scope.select_related("app_user").get(id=farmer_id)
         except FarmerProfile.DoesNotExist:
             return api_response(
                 success=False,
