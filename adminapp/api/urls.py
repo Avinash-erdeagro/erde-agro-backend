@@ -18,14 +18,6 @@ from adminapp.views import (
     HierarchyFPOListView,
     HierarchyFarmerDetailView,
     HierarchyFarmerListView,
-    # Org-user farms & satellite dashboard
-    OrgDashboardDistrictListView,
-    OrgDashboardFarmBoundariesView,
-    OrgDashboardFarmerFarmsListView,
-    OrgDashboardFarmerListByDistrictView,
-    OrgDashboardFarmMapLayersView,
-    OrgDashboardFilterStateView,
-    OrgDashboardOverviewView,
     # Stats
     FPOAreaStatsView,
     FPOStatsView,
@@ -60,31 +52,6 @@ urlpatterns = [
     path("org-data/fpos/<int:pk>/", HierarchyFPODetailView.as_view(), name="org-fpo-detail"),
     path("org-data/farmers/", HierarchyFarmerListView.as_view(), name="org-farmer-list"),
     path("org-data/farmers/<int:pk>/", HierarchyFarmerDetailView.as_view(), name="org-farmer-detail"),
-
-    # ── Org-user farms & satellite dashboard (same shapes as /fpo/...) ───────
-    path("org-data/dashboard/overview/", OrgDashboardOverviewView.as_view(), name="org-dash-overview"),
-    path("org-data/dashboard/farmers/filter-states/", OrgDashboardFilterStateView.as_view(), name="org-dash-states"),
-    path(
-        "org-data/dashboard/farmers/states/<str:state>/districts/",
-        OrgDashboardDistrictListView.as_view(),
-        name="org-dash-districts",
-    ),
-    path(
-        "org-data/dashboard/farmers/states/<str:state>/districts/<str:district>/farmers/",
-        OrgDashboardFarmerListByDistrictView.as_view(),
-        name="org-dash-farmers-in-district",
-    ),
-    path(
-        "org-data/dashboard/farmers/<int:farmer_id>/farms/",
-        OrgDashboardFarmerFarmsListView.as_view(),
-        name="org-dash-farmer-farms",
-    ),
-    path("org-data/dashboard/farms/geojson/", OrgDashboardFarmBoundariesView.as_view(), name="org-dash-farm-boundaries"),
-    path(
-        "org-data/dashboard/farms/<int:farm_id>/satellite-map-layers/",
-        OrgDashboardFarmMapLayersView.as_view(),
-        name="org-dash-farm-map-layers",
-    ),
 
     # ── Stats ─────────────────────────────────────────────────────────────────
     path("stats/overview/", PlatformOverviewStatsView.as_view(), name="stats-overview"),
