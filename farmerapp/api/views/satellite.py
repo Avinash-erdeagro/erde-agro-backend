@@ -20,6 +20,28 @@ from farmerapp.services import (
     fetch_satellite_results_by_farm_id,
 )
 from django.db.models import Prefetch, OuterRef, Subquery
+from authapp.services.hierarchy import get_accessible_farmer_profiles
+
+
+def scope_farms_for_user(queryset, app_user):
+    """Limit a Farm queryset to the farms `app_user` may view.
+
+    FARMER      → their own farms
+    FPO         → farms of farmers registered under the FPO
+    ORG_USER    → farms under the FPOs in their hierarchy subtree
+    SUPER_ADMIN → all farms
+    """
+    if app_user.role == AppUser.Role.FARMER:
+        return queryset.filter(farmer=app_user)
+    if app_user.role == AppUser.Role.FPO:
+        return queryset.filter(
+            farmer__farmer_profile__registered_with_fpo=app_user.fpo_profile
+        )
+    if app_user.role in (AppUser.Role.ORG_USER, AppUser.Role.SUPER_ADMIN):
+        return queryset.filter(
+            farmer__farmer_profile__in=get_accessible_farmer_profiles(app_user)
+        )
+    return queryset.none()
 
 
 
@@ -33,14 +55,7 @@ class FarmSatelliteResultsView(BaseAPIView):
             "farmer", "soil_type", "irrigation_type"
         ).prefetch_related("crops", "crops__primary_crop")
 
-        if app_user.role == "FARMER":
-            queryset = queryset.filter(farmer=app_user)
-        elif app_user.role == "FPO":
-            queryset = queryset.filter(
-                farmer__farmer_profile__registered_with_fpo=app_user.fpo_profile
-            )
-
-        return queryset
+        return scope_farms_for_user(queryset, app_user)
 
     def get(self, request, farm_id):
         farm = get_object_or_404(self.get_queryset(), pk=farm_id)
@@ -102,14 +117,7 @@ class FarmSatelliteChartsView(BaseAPIView):
             "farmer", "soil_type", "irrigation_type"
         ).prefetch_related("crops", "crops__primary_crop")
 
-        if app_user.role == "FARMER":
-            queryset = queryset.filter(farmer=app_user)
-        elif app_user.role == "FPO":
-            queryset = queryset.filter(
-                farmer__farmer_profile__registered_with_fpo=app_user.fpo_profile
-            )
-
-        return queryset
+        return scope_farms_for_user(queryset, app_user)
 
     def get(self, request, farm_id):
         serializer = FarmerSatelliteOverviewQuerySerializer(
@@ -182,14 +190,7 @@ class FarmSatelliteInsightsView(BaseAPIView):
             "farmer", "soil_type", "irrigation_type"
         ).prefetch_related("crops", "crops__primary_crop")
 
-        if app_user.role == "FARMER":
-            queryset = queryset.filter(farmer=app_user)
-        elif app_user.role == "FPO":
-            queryset = queryset.filter(
-                farmer__farmer_profile__registered_with_fpo=app_user.fpo_profile
-            )
-
-        return queryset
+        return scope_farms_for_user(queryset, app_user)
 
     def get(self, request, farm_id):
         serializer = FarmerSatelliteOverviewQuerySerializer(

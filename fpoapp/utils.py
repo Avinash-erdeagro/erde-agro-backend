@@ -13,13 +13,17 @@ def localized_lookup_name(lookup, language_code=None):
     return lookup.name
 
 
-def filter_fpo_farms(fpo_profile, state=None, district=None, farmer_id=None):
-    """Farms of an FPO narrowed to the sidebar selection.
+def filter_scoped_farms(farmer_scope, state=None, district=None, farmer_id=None):
+    """Farms of the farmers in `farmer_scope` narrowed to the sidebar selection.
+
+    `farmer_scope` is a FarmerProfile queryset: one FPO's farmers for the FPO
+    dashboard, or every farmer under the caller's hierarchy node for the
+    org-user dashboard.
 
     Shared by the overview and the farm-boundaries map so both always cover
     exactly the same set of farms.
     """
-    farms = Farm.objects.filter(farmer__farmer_profile__registered_with_fpo=fpo_profile)
+    farms = Farm.objects.filter(farmer__farmer_profile__in=farmer_scope)
     if state:
         farms = farms.filter(farmer__farmer_profile__locality__state__iexact=state)
     if district:

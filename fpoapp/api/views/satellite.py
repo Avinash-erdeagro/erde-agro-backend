@@ -25,7 +25,8 @@ from farmerapp.services import (
     fetch_farm_map_layers_by_farm_ids,
     fetch_satellite_metrics_by_farm_ids,
 )
-from fpoapp.utils import filter_fpo_farms, localized_lookup_name
+from fpoapp.api.views.scope import FPOFarmerScopeMixin
+from fpoapp.utils import filter_scoped_farms, localized_lookup_name
 
 
 class FPOSatelliteOverviewView(BaseAPIView):
@@ -321,10 +322,10 @@ class FPOSatelliteMapLayersView(BaseAPIView):
         )
 
 
-class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
+class FPOSingleFarmSatelliteMapLayersView(FPOFarmerScopeMixin, BaseAPIView):
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self, fpo_profile):
+    def get_queryset(self, farmer_scope):
         latest_subscription_qs = FarmSatelliteSubscription.objects.filter(
             farm_id=OuterRef("pk")
         ).order_by("-created_at")
@@ -333,7 +334,7 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
 
         return (
             Farm.objects.filter(
-                farmer__farmer_profile__registered_with_fpo=fpo_profile
+                farmer__farmer_profile__in=farmer_scope
             )
             .select_related("farmer", "farmer__farmer_profile")
             .annotate(
@@ -347,15 +348,9 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
         )
 
     def get(self, request, farm_id):
-        app_user = request.user.appuser
-
-        if app_user.role != AppUser.Role.FPO:
-            return api_response(
-                success=False,
-                message="This API is available only for FPO users.", code=ResponseCode.FPO_ONLY,
-                result=None,
-                status_code=status.HTTP_403_FORBIDDEN,
-            )
+        farmer_scope = self.get_farmer_scope()
+        if farmer_scope is None:
+            return self.scope_denied_response()
 
         serializer = FarmerSatelliteOverviewQuerySerializer(
             data=request.query_params
@@ -363,7 +358,7 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
         serializer.is_valid(raise_exception=True)
         observation_date = serializer.validated_data["observation_date"]
 
-        farm = get_object_or_404(self.get_queryset(app_user.fpo_profile), pk=farm_id)
+        farm = get_object_or_404(self.get_queryset(farmer_scope), pk=farm_id)
 
         try:
             satellite_layers = fetch_farm_map_layers_by_farm_ids(
@@ -411,22 +406,13 @@ class FPOSingleFarmSatelliteMapLayersView(BaseAPIView):
         )
 
 # --- FPO Overview API ---
-class FPOOverviewAPIView(BaseAPIView):
+class FPOOverviewAPIView(FPOFarmerScopeMixin, BaseAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        app_user = request.user.appuser
-        if app_user.role != AppUser.Role.FPO:
-            return api_response(
-                success=False,
-                message="This API is available only for FPO users.", code=ResponseCode.FPO_ONLY,
-                result=None,
-                status_code=status.HTTP_403_FORBIDDEN,
-            )
-
-        fpo_profile = getattr(app_user, "fpo_profile", None)
-        if not fpo_profile:
-            return api_response(success=False, message="No FPO profile found.", result=None, status_code=403, code=ResponseCode.FPO_PROFILE_NOT_FOUND)
+        farmer_scope = self.get_farmer_scope()
+        if farmer_scope is None:
+            return self.scope_denied_response()
 
         observation_date = request.query_params.get("observation_date")
         if not observation_date:
@@ -439,8 +425,8 @@ class FPOOverviewAPIView(BaseAPIView):
 
 
         # Optional filters
-        farms = filter_fpo_farms(
-            fpo_profile,
+        farms = filter_scoped_farms(
+            farmer_scope,
             state=request.query_params.get("state"),
             district=request.query_params.get("district"),
             farmer_id=request.query_params.get("farmer"),
@@ -507,7 +493,7 @@ class FPOOverviewAPIView(BaseAPIView):
 
 
 # --- FPO Farm Boundaries (map) API ---
-class FPOFarmBoundariesAPIView(BaseAPIView):
+class FPOFarmBoundariesAPIView(FPOFarmerScopeMixin, BaseAPIView):
     """All FPO farms in the sidebar selection as a GeoJSON FeatureCollection.
 
     Takes the same ``state`` / ``district`` / ``farmer`` filters as the
@@ -519,22 +505,13 @@ class FPOFarmBoundariesAPIView(BaseAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        app_user = request.user.appuser
-        if app_user.role != AppUser.Role.FPO:
-            return api_response(
-                success=False,
-                message="This API is available only for FPO users.", code=ResponseCode.FPO_ONLY,
-                result=None,
-                status_code=status.HTTP_403_FORBIDDEN,
-            )
-
-        fpo_profile = getattr(app_user, "fpo_profile", None)
-        if not fpo_profile:
-            return api_response(success=False, message="No FPO profile found.", result=None, status_code=403, code=ResponseCode.FPO_PROFILE_NOT_FOUND)
+        farmer_scope = self.get_farmer_scope()
+        if farmer_scope is None:
+            return self.scope_denied_response()
 
         farms = (
-            filter_fpo_farms(
-                fpo_profile,
+            filter_scoped_farms(
+                farmer_scope,
                 state=request.query_params.get("state"),
                 district=request.query_params.get("district"),
                 farmer_id=request.query_params.get("farmer"),
