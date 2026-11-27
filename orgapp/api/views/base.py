@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from authapp.api.responses import api_response
 from authapp.api.response_codes import ResponseCode
 from authapp.api.views.base import BaseAPIView
-from authapp.models import AppUser
+from authapp.models import AppUser, OrgUnitFPO
 from orgapp.services import get_org_farmers, get_org_farms, get_org_fpos, get_org_units
 
 
@@ -98,3 +98,44 @@ class OrgScopedAPIView(BaseAPIView):
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
         return parsed - timedelta(days=1), None
+
+    def filter_farms_by_selection(self, farms):
+        """
+        Narrow a scoped farms queryset to the sidebar selection:
+        ?org_unit=<id> (that unit's whole subtree), ?fpo=<id>, ?farmer=<id>
+        (FarmerProfile id). Several may be given; they combine with AND.
+        An id outside the caller's scope just gives no farms.
+
+        Returns (farms, None) or (None, error_response) for a non-numeric id.
+        """
+        params = {}
+        for name in ("org_unit", "fpo", "farmer"):
+            raw = self.request.query_params.get(name)
+            if not raw:
+                continue
+            if not raw.isdigit():
+                return None, api_response(
+                    success=False,
+                    message=f"{name} must be a numeric id.",
+                    code=ResponseCode.INVALID_DATA,
+                    result=None,
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+            params[name] = int(raw)
+
+        if "org_unit" in params:
+            unit = self.get_org_units().filter(pk=params["org_unit"]).first()
+            if unit is None:
+                return farms.none(), None
+            subtree_fpo_ids = OrgUnitFPO.objects.filter(
+                org_unit__organization_id=unit.organization_id,
+                org_unit__path__startswith=unit.path,
+            ).values("fpo_profile_id")
+            farms = farms.filter(
+                farmer__farmer_profile__registered_with_fpo_id__in=subtree_fpo_ids
+            )
+        if "fpo" in params:
+            farms = farms.filter(farmer__farmer_profile__registered_with_fpo_id=params["fpo"])
+        if "farmer" in params:
+            farms = farms.filter(farmer__farmer_profile__id=params["farmer"])
+        return farms, None
