@@ -10,6 +10,7 @@ Each issue is a dict:
     {"code": str, "severity": "error" | "warning" | "info", "message": str, ...extra}
 """
 
+import json
 import logging
 from collections import defaultdict
 
@@ -21,6 +22,9 @@ from satelliteapp.services.order_submit import MIN_FARM_AREA_ACRES
 logger = logging.getLogger(__name__)
 
 ERROR, WARNING, INFO = "error", "warning", "info"
+
+# Issue codes that describe an overlap with another farm (they carry other_farm_* fields).
+OVERLAP_CODES = frozenset({"DUPLICATE", "INSIDE_OTHER", "CONTAINS_OTHER", "OVERLAP"})
 
 # Overlap thresholds, as % of a farm's own area covered by another farm.
 # Below MIN_OVERLAP_PCT it's treated as GPS noise along a shared edge.
@@ -203,3 +207,24 @@ def check_farms(farms):
             issues.append(_overlap_issue(other_info[other_id], pct_this, pct_other, overlap_m2))
         result[farm.id] = issues
     return result
+
+
+_INTERSECTION_SQL = f"""
+    SELECT b.id, ST_AsGeoJSON(ST_Intersection(a.boundary, b.boundary))
+    FROM {Farm._meta.db_table} a
+    JOIN {Farm._meta.db_table} b ON b.id = ANY(%s)
+    WHERE a.id = %s AND ST_IsValid(a.boundary) AND ST_IsValid(b.boundary)
+"""
+
+
+def overlap_geometries(farm_id, other_ids):
+    """{other_id: GeoJSON geometry of the area shared with farm_id} (for drawing)."""
+    if not other_ids:
+        return {}
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(_INTERSECTION_SQL, [list(other_ids), farm_id])
+            return {other_id: json.loads(geojson) for other_id, geojson in cursor.fetchall() if geojson}
+    except Exception:
+        logger.exception("Intersection geometry failed for farm %s", farm_id)
+        return {}

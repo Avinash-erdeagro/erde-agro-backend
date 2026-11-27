@@ -11,6 +11,7 @@ from .hierarchy import (
     OrganizationDetailView,
     OrganizationListCreateView,
 )
+from .farm_inspect import SuperAdminFarmInspectView
 from .fpo_detail import (
     SuperAdminFPODetailView,
     SuperAdminFPOFarmersView,
@@ -48,6 +49,7 @@ __all__ = [
     "SuperAdminFPODetailView",
     "SuperAdminFPOFarmsView",
     "SuperAdminFPOFarmersView",
+    "SuperAdminFarmInspectView",
     # Stats
     "PlatformOverviewStatsView",
     "FPOStatsView",

@@ -45,16 +45,18 @@ def _locality(locality):
     }
 
 
-def _fpo_farms(fpo):
-    """Farms of the FPO with what the detail page needs prefetched/annotated."""
+def with_farm_details(farms):
+    """Prefetch/annotate what farm rows need: farmer, lookups, active crop,
+    subscriptions (newest first) and the latest satellite observation date."""
     latest_observation = (
         SatelliteResult.objects.filter(order_farm__farm=OuterRef("pk"))
         .order_by("-observation_date")
         .values("observation_date")[:1]
     )
     return (
-        Farm.objects.filter(farmer__farmer_profile__registered_with_fpo=fpo)
-        .select_related("farmer__farmer_profile", "soil_type", "irrigation_type")
+        farms.select_related(
+            "farmer__farmer_profile__registered_with_fpo", "soil_type", "irrigation_type"
+        )
         .prefetch_related(
             Prefetch(
                 "crops",
@@ -74,7 +76,11 @@ def _fpo_farms(fpo):
     )
 
 
-def _crop_details(crop):
+def _fpo_farms(fpo):
+    return with_farm_details(Farm.objects.filter(farmer__farmer_profile__registered_with_fpo=fpo))
+
+
+def crop_details(crop):
     """Active crop, with whether each name was chosen from the list or typed by hand."""
     if crop is None:
         return None
@@ -91,12 +97,12 @@ def _crop_details(crop):
     }
 
 
-def _current_subscription(farm):
+def current_subscription(farm):
     return farm.subscriptions_newest_first[0] if farm.subscriptions_newest_first else None
 
 
 def _satellite_status(farm):
-    sub = _current_subscription(farm)
+    sub = current_subscription(farm)
     return sub.status if sub else NOT_SENT
 
 
@@ -174,7 +180,7 @@ class SuperAdminFPOFarmsView(APIView):
         for farm in farms:
             farmer = farm.farmer.farmer_profile
             crop = farm.active_crops[0] if farm.active_crops else None
-            sub = _current_subscription(farm)
+            sub = current_subscription(farm)
             result.append(
                 {
                     "id": farm.id,
@@ -182,7 +188,7 @@ class SuperAdminFPOFarmsView(APIView):
                     "farmer_id": farmer.id,
                     "farmer_name": farmer.farmer_name,
                     "area": round(farm.area or 0, 2),
-                    "crop": _crop_details(crop),
+                    "crop": crop_details(crop),
                     "soil_type": farm.soil_type.name if farm.soil_type else None,
                     "irrigation_type": farm.irrigation_type.name if farm.irrigation_type else None,
                     "satellite_status": sub.status if sub else NOT_SENT,
