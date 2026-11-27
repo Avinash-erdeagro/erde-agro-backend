@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "satelliteapp",
     "notificationapp",
     "clientapp",
+    "orgapp",
 ]
 
 MIDDLEWARE = [
