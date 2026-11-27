@@ -2,7 +2,8 @@
 Single-FPO views for the super-admin FPO detail page — SUPER_ADMIN only.
 
   GET /super-admin/fpos/<id>/          FPO info, org placement and summary stats
-  GET /super-admin/fpos/<id>/farms/    every farm with crop, satellite status and boundary
+  GET /super-admin/fpos/<id>/farms/    every farm with crop details, satellite status,
+                                       boundary and data-quality issues (overlaps etc.)
   GET /super-admin/fpos/<id>/farmers/  every farmer with farm count and total area
 """
 
@@ -18,6 +19,7 @@ from authapp.api.responses import api_response
 from authapp.models import FarmerProfile, FpoProfile
 from farmerapp.models import Farm, FarmCrop, FarmSatelliteSubscription
 from satelliteapp.models.provider import SatelliteResult
+from satelliteapp.services.farm_checks import check_farms
 
 # Status shown for farms that have never had a satellite subscription.
 NOT_SENT = "NOT_SENT"
@@ -56,7 +58,9 @@ def _fpo_farms(fpo):
         .prefetch_related(
             Prefetch(
                 "crops",
-                queryset=FarmCrop.objects.filter(is_active=True).select_related("primary_crop"),
+                queryset=FarmCrop.objects.filter(is_active=True).select_related(
+                    "primary_crop", "intercrop"
+                ),
                 to_attr="active_crops",
             ),
             Prefetch(
@@ -68,6 +72,23 @@ def _fpo_farms(fpo):
         .annotate(latest_observation_date=Subquery(latest_observation))
         .order_by("id")
     )
+
+
+def _crop_details(crop):
+    """Active crop, with whether each name was chosen from the list or typed by hand."""
+    if crop is None:
+        return None
+    return {
+        "name": crop.primary_crop_name,
+        "source": "LIST" if crop.primary_crop_id else "CUSTOM",
+        "variety": crop.primary_crop_variety or None,
+        "intercrop": crop.intercrop_name,
+        "intercrop_source": (
+            "LIST" if crop.intercrop_id else ("CUSTOM" if crop.custom_intercrop_name else None)
+        ),
+        "intercrop_variety": crop.intercrop_variety or None,
+        "plantation_date": crop.plantation_date.isoformat() if crop.plantation_date else None,
+    }
 
 
 def _current_subscription(farm):
@@ -137,7 +158,7 @@ class SuperAdminFPODetailView(APIView):
 
 
 class SuperAdminFPOFarmsView(APIView):
-    """GET /super-admin/fpos/<id>/farms/ — farms with crop, satellite status and boundary."""
+    """GET /super-admin/fpos/<id>/farms/ — farms with crop, satellite status, boundary and issues."""
 
     permission_classes = [IsSuperAdmin]
 
@@ -146,8 +167,11 @@ class SuperAdminFPOFarmsView(APIView):
         if fpo is None:
             return _fpo_not_found()
 
+        farms = list(_fpo_farms(fpo))
+        issues_by_farm = check_farms(farms)
+
         result = []
-        for farm in _fpo_farms(fpo):
+        for farm in farms:
             farmer = farm.farmer.farmer_profile
             crop = farm.active_crops[0] if farm.active_crops else None
             sub = _current_subscription(farm)
@@ -158,7 +182,7 @@ class SuperAdminFPOFarmsView(APIView):
                     "farmer_id": farmer.id,
                     "farmer_name": farmer.farmer_name,
                     "area": round(farm.area or 0, 2),
-                    "crop": crop.primary_crop_name if crop else None,
+                    "crop": _crop_details(crop),
                     "soil_type": farm.soil_type.name if farm.soil_type else None,
                     "irrigation_type": farm.irrigation_type.name if farm.irrigation_type else None,
                     "satellite_status": sub.status if sub else NOT_SENT,
@@ -170,6 +194,7 @@ class SuperAdminFPOFarmsView(APIView):
                         else None
                     ),
                     "boundary": json.loads(farm.boundary.geojson) if farm.boundary else None,
+                    "issues": issues_by_farm.get(farm.id, []),
                 }
             )
 
