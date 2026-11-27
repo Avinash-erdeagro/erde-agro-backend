@@ -18,6 +18,11 @@ from adminapp.views import (
     HierarchyFPOListView,
     HierarchyFarmerDetailView,
     HierarchyFarmerListView,
+    # FPO detail page
+    SuperAdminFarmInspectView,
+    SuperAdminFPODetailView,
+    SuperAdminFPOFarmersView,
+    SuperAdminFPOFarmsView,
     # Stats
     FPOAreaStatsView,
     FPOStatsView,
@@ -52,6 +57,12 @@ urlpatterns = [
     path("org-data/fpos/<int:pk>/", HierarchyFPODetailView.as_view(), name="org-fpo-detail"),
     path("org-data/farmers/", HierarchyFarmerListView.as_view(), name="org-farmer-list"),
     path("org-data/farmers/<int:pk>/", HierarchyFarmerDetailView.as_view(), name="org-farmer-detail"),
+
+    # ── FPO detail page (SUPER_ADMIN) ────────────────────────────────────────
+    path("fpos/<int:pk>/", SuperAdminFPODetailView.as_view(), name="fpo-detail"),
+    path("fpos/<int:pk>/farms/", SuperAdminFPOFarmsView.as_view(), name="fpo-farms"),
+    path("fpos/<int:pk>/farmers/", SuperAdminFPOFarmersView.as_view(), name="fpo-farmers"),
+    path("farms/<int:pk>/inspect/", SuperAdminFarmInspectView.as_view(), name="farm-inspect"),
 
     # ── Stats ─────────────────────────────────────────────────────────────────
     path("stats/overview/", PlatformOverviewStatsView.as_view(), name="stats-overview"),

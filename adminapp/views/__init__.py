@@ -11,6 +11,12 @@ from .hierarchy import (
     OrganizationDetailView,
     OrganizationListCreateView,
 )
+from .farm_inspect import SuperAdminFarmInspectView
+from .fpo_detail import (
+    SuperAdminFPODetailView,
+    SuperAdminFPOFarmersView,
+    SuperAdminFPOFarmsView,
+)
 from .notifications import DeviceTokenStatsView, UserNotificationCoverageView
 from .org_data import (
     HierarchyFPODetailView,
@@ -39,6 +45,11 @@ __all__ = [
     "HierarchyFPODetailView",
     "HierarchyFarmerListView",
     "HierarchyFarmerDetailView",
+    # FPO detail page
+    "SuperAdminFPODetailView",
+    "SuperAdminFPOFarmsView",
+    "SuperAdminFPOFarmersView",
+    "SuperAdminFarmInspectView",
     # Stats
     "PlatformOverviewStatsView",
     "FPOStatsView",
