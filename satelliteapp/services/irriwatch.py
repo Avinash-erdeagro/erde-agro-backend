@@ -101,6 +101,11 @@ def download_result_zip(company_uuid, order_uuid, result_uuid):
 
 def create_order(company_uuid, feature_collection):
     """Create an IrriWatch order for a GeoJSON FeatureCollection of fields."""
+    if not getattr(settings, "IRRIWATCH_ALLOW_ORDER_CREATION", False):
+        raise RuntimeError(
+            "IrriWatch order creation is disabled in this environment "
+            "(IRRIWATCH_ALLOW_ORDER_CREATION=False)."
+        )    
     response = requests.post(
         f"{settings.IRRIWATCH_BASE_URL}/company/{company_uuid}/order",
         headers=_headers(),

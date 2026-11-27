@@ -12,15 +12,6 @@ from .hierarchy import (
     OrganizationListCreateView,
 )
 from .notifications import DeviceTokenStatsView, UserNotificationCoverageView
-from .org_dashboard import (
-    OrgDashboardDistrictListView,
-    OrgDashboardFarmBoundariesView,
-    OrgDashboardFarmerFarmsListView,
-    OrgDashboardFarmerListByDistrictView,
-    OrgDashboardFarmMapLayersView,
-    OrgDashboardFilterStateView,
-    OrgDashboardOverviewView,
-)
 from .org_data import (
     HierarchyFPODetailView,
     HierarchyFPOListView,
@@ -48,14 +39,6 @@ __all__ = [
     "HierarchyFPODetailView",
     "HierarchyFarmerListView",
     "HierarchyFarmerDetailView",
-    # Org-user farms & satellite dashboard
-    "OrgDashboardFilterStateView",
-    "OrgDashboardDistrictListView",
-    "OrgDashboardFarmerListByDistrictView",
-    "OrgDashboardFarmerFarmsListView",
-    "OrgDashboardOverviewView",
-    "OrgDashboardFarmBoundariesView",
-    "OrgDashboardFarmMapLayersView",
     # Stats
     "PlatformOverviewStatsView",
     "FPOStatsView",

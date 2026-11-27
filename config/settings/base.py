@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     "fpoapp",
     "satelliteapp",
     "notificationapp",
+    "clientapp",
+    "orgapp",
 ]
 
 MIDDLEWARE = [
